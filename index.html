@@ -3,27 +3,38 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Barra superior fija</title>
+  <title>Barra lateral con offcanvas</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
   <style>
-    body {
-      padding-top: 100px; /* espacio para la barra fija */
+    /* Barra fija en escritorio */
+    @media (min-width: 768px) {
+      .sidebar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 25%;
+        height: 100vh;
+        background-color: #000;
+        color: white;
+        z-index: 1030;
+        padding-top: 2rem;
+      }
+
+      .main-content {
+        margin-left: 25%;
+        padding: 2rem;
+      }
     }
 
-    .topbar {
-      height: 100px;
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      z-index: 1030;
-      background-color: #000;
-      color: white;
+    @media (max-width: 767.98px) {
+      .main-content {
+        padding: 1rem;
+      }
     }
 
-    .topbar img {
-      width: 60px;
-      height: 60px;
+    .sidebar img {
+      width: 120px;
+      height: 120px;
       object-fit: cover;
       border-radius: 50%;
     }
@@ -31,18 +42,40 @@
 </head>
 <body class="bg-light">
 
-  <!-- Barra superior fija -->
-  <header class="topbar d-flex align-items-center px-4">
-    <img src="https://images.unsplash.com/photo-1502767089025-6572583495b0?auto=format&fit=crop&w=60&h=60&q=80" alt="Logo" class="me-3" />
-    <h4 class="mb-0">Mi Logo</h4>
-  </header>
+  <!-- Navbar solo visible en móvil -->
+  <nav class="navbar bg-dark d-md-none">
+    <div class="container-fluid">
+      <button class="btn btn-outline-light" type="button" data-bs-toggle="offcanvas" data-bs-target="#mobileSidebar">
+        ☰ Menú
+      </button>
+      <span class="navbar-text text-white">Mi Logo</span>
+    </div>
+  </nav>
+
+  <!-- Sidebar fija en escritorio -->
+  <div class="sidebar d-none d-md-flex flex-column align-items-center">
+    <img src="https://images.unsplash.com/photo-1502767089025-6572583495b0?auto=format&fit=crop&w=120&h=120&q=80" alt="Foto circular" class="mb-3">
+    <h4>Mi Logo</h4>
+  </div>
+
+  <!-- Offcanvas desde arriba en móvil -->
+  <div class="offcanvas offcanvas-top bg-dark text-white d-md-none" tabindex="-1" id="mobileSidebar">
+    <div class="offcanvas-header">
+      <h5 class="offcanvas-title">Mi Logo</h5>
+      <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
+    </div>
+    <div class="offcanvas-body text-center">
+      <img src="https://images.unsplash.com/photo-1502767089025-6572583495b0?auto=format&fit=crop&w=120&h=120&q=80" class="rounded-circle mb-3" alt="Foto circular">
+      <p>Aquí puedes agregar enlaces o navegación.</p>
+    </div>
+  </div>
 
   <!-- Contenido principal -->
-  <main class="container">
+  <div class="main-content">
     <h1>Contenido principal</h1>
-    <p>Aquí va el contenido principal. Al hacer scroll, la barra superior permanece fija.</p>
-    <div style="height: 2000px;"></div> <!-- Simulación de contenido largo -->
-  </main>
+    <p>Este es el contenido principal. En escritorio, la barra está a la izquierda. En móvil, aparece arriba al pulsar el botón.</p>
+    <div style="height: 2000px;"></div>
+  </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
