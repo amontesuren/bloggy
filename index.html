@@ -1,22 +1,74 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
-  <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
-  <script id="MathJax-script" async
-    src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
-  </script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Responsive Sidebar</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <style>
+    @media (min-width: 768px) {
+      .sidebar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 25%;
+        height: 100vh;
+        background-color: #000;
+        color: white;
+        z-index: 1030;
+        padding-top: 2rem;
+      }
+
+      .main-content {
+        margin-left: 25%;
+        padding: 2rem;
+      }
+    }
+
+    @media (max-width: 767.98px) {
+      .main-content {
+        padding: 1rem;
+      }
+    }
+  </style>
 </head>
-<body>
-  <h1>Ejemplo de ecuación LaTeX</h1>
-  <p>
-    Aquí va una ecuación:  
-    \( E = mc^2 \)
-  </p>
-  <p>
-    Otra en bloque:
-    \[
-      \int_{a}^{b} f(x)\,dx = F(b) - F(a)
-    \]
-  </p>
+<body class="bg-light">
+
+  <!-- Botón para mostrar menú en móviles -->
+  <nav class="navbar bg-dark d-md-none">
+    <div class="container-fluid">
+      <button class="btn btn-outline-light" type="button" data-bs-toggle="offcanvas" data-bs-target="#mobileSidebar">
+        ☰ Menú
+      </button>
+      <span class="navbar-text text-white">Mi Logo</span>
+    </div>
+  </nav>
+
+  <!-- Sidebar fijo en escritorio -->
+  <div class="sidebar d-none d-md-flex flex-column align-items-center">
+    <img src="https://via.placeholder.com/120" class="rounded-circle mb-3" alt="Foto circular" width="120" height="120">
+    <h4>Mi Logo</h4>
+  </div>
+
+  <!-- Offcanvas sidebar en móvil -->
+  <div class="offcanvas offcanvas-start bg-dark text-white d-md-none" tabindex="-1" id="mobileSidebar">
+    <div class="offcanvas-header">
+      <h5 class="offcanvas-title">Mi Logo</h5>
+      <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
+    </div>
+    <div class="offcanvas-body text-center">
+      <img src="https://via.placeholder.com/120" class="rounded-circle mb-3" alt="Foto circular" width="120" height="120">
+      <p>Contenido del menú</p>
+    </div>
+  </div>
+
+  <!-- Contenido principal -->
+  <div class="main-content">
+    <h1>Contenido principal</h1>
+    <p>Este es el contenido principal. Puedes hacer scroll sin afectar la barra lateral fija.</p>
+    <div style="height: 2000px;"></div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
