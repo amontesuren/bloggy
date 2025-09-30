@@ -15,6 +15,23 @@
             border-radius: 8px; 
             box-shadow: 0 4px 8px rgba(0,0,0,0.1); 
         }
+        
+        /* --- ESTILOS PARA EL BOTÓN DE VOLVER --- */
+        .back-button {
+            display: inline-block;
+            margin-bottom: 20px;
+            padding: 8px 15px;
+            background-color: #007bff;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+            transition: background-color 0.2s;
+        }
+        .back-button:hover {
+            background-color: #0056b3;
+        }
+        
         h1 { 
             text-align: center; 
             color: #333; 
@@ -22,15 +39,11 @@
         .form-grid { 
             display: grid; 
             grid-template-columns: 1fr 1fr; 
-            gap: 15px; /* Reducimos un poco el gap para móviles */
+            gap: 15px;
         }
-        
-        /* --- CORRECCIÓN --- */
-        /* Esto asegura que los elementos dentro de la grilla puedan encogerse adecuadamente */
         .form-grid > div {
             min-width: 0;
         }
-
         .form-grid .full-width { 
             grid-column: 1 / -1; 
         }
@@ -44,20 +57,19 @@
             padding: 10px; 
             border-radius: 4px; 
             border: 1px solid #ccc; 
-            box-sizing: border-box; /* Muy importante para que el padding no afecte el ancho total */
-            font-size: 1em; /* Asegura que la fuente sea del mismo tamaño */
-            font-family: inherit; /* Usa la misma fuente que el resto del body */
-            -webkit-appearance: none; /* Elimina estilos por defecto en iOS */
-            -moz-appearance: none; /* Elimina estilos por defecto en Firefox */
-            appearance: none; /* Elimina estilos por defecto generales */
+            box-sizing: border-box;
+            font-size: 1em;
+            font-family: inherit;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
         }
-        /* Añadimos de nuevo la flecha para los 'select' que quitamos con 'appearance: none' */
         select {
             background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23007AFF%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E');
             background-repeat: no-repeat;
             background-position: right 10px top 50%;
             background-size: .65em auto;
-            padding-right: 30px; /* Espacio para la flecha */
+            padding-right: 30px;
         }
         #resultado-contenedor { 
             min-height: 50px; 
@@ -74,7 +86,9 @@
 </head>
 <body>
 
-    <h1>Decay ☢️</h1>
+    <a href="index.html" class="back-button">&larr; Volver al Conversor de Unidades</a>
+
+    <h1>Calculadora de Decaimiento Isotópico ☢️</h1>
 
     <div id="calculadora">
         <div class="form-grid">
@@ -82,7 +96,6 @@
                 <label for="actividad-inicial">Actividad Inicial:</label>
                 <input type="number" id="actividad-inicial" value="100" step="any">
             </div>
-            <div id="resultado-contenedor"></div>
             <div>
                 <label for="unidad-actividad">Unidad:</label>
                 <select id="unidad-actividad">
@@ -117,11 +130,10 @@
             </div>
         </div>
 
-
+        <div id="resultado-contenedor"></div>
     </div>
 
     <script>
-        // --- ELEMENTOS DEL DOM ---
         const actividadInicialEl = document.getElementById('actividad-inicial');
         const unidadActividadEl = document.getElementById('unidad-actividad');
         const isotopoEl = document.getElementById('isotopo');
@@ -129,7 +141,6 @@
         const fechaFinalEl = document.getElementById('fecha-final');
         const resultadoContenedorEl = document.getElementById('resultado-contenedor');
 
-        // --- LÓGICA DE LA APLICACIÓN ---
         function formatearFechaParaInput(date) {
             const pad = (num) => num.toString().padStart(2, '0');
             const anio = date.getFullYear();
@@ -156,7 +167,7 @@
             const t = tiempoTranscurridoMs / (1000 * 60 * 60);
             const lambda = Math.log(2) / T_half;
             const At = A0 * Math.exp(-lambda * t);
-            resultadoContenedorEl.textContent = `${At.toFixed(1)} ${unidad}`;
+            resultadoContenedorEl.textContent = `${At.toFixed(3)} ${unidad}`;
         }
 
         function inicializar() {
