@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Conversor de Unidades (Ci ↔ Bq) con JavaScript</title>
+    
+    <style>
+        body { font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif; max-width: 500px; margin: 40px auto; padding: 20px; background-color: #f9f9f9; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        form > div { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input, select { width: 100%; padding: 10px; border-radius: 4px; border: 1px solid #ccc; box-sizing: border-box; font-size: 1em; }
+        #resultado-contenedor { min-height: 50px; background-color: #e7f3ff; border-left: 5px solid #007bff; padding: 15px; font-size: 1.5em; font-weight: bold; color: #333; margin-top: 20px; }
+    </style>
+</head>
+<body>
+
+    <h1>Conversor de Unidades Radiactivas ☢️</h1>
+    <p>Realizado con JavaScript puro, sin servidor.</p>
+
+    <form id="conversor-form">
+        <div>
+            <label for="valor">Valor a convertir:</label>
+            <input type="number" id="valor" name="valor" value="1" step="any">
+        </div>
+
+        <div>
+            <label for="unidad_origen">Unidad de Origen:</label>
+            <select id="unidad_origen" name="unidad_origen">
+                <option value="Ci">Curie (Ci)</option>
+                <option value="mCi" selected>Milicurie (mCi)</option>
+                <option value="uCi">Microcurie (µCi)</option>
+                <option value="nCi">Nanocurie (nCi)</option>
+                <option value="Bq">Becquerel (Bq)</option>
+                <option value="kBq">Kilobecquerel (kBq)</option>
+                <option value="MBq">Megabecquerel (MBq)</option>
+            </select>
+        </div>
+        
+        <div>
+            <label for="unidad_destino">Convertir a:</label>
+            <select id="unidad_destino" name="unidad_destino">
+                <option value="Bq" selected>Becquerel (Bq)</option>
+                <option value="kBq">Kilobecquerel (kBq)</option>
+                <option value="MBq">Megabecquerel (MBq)</option>
+                <option value="Ci">Curie (Ci)</option>
+                <option value="mCi">Milicurie (mCi)</option>
+                <option value="uCi">Microcurie (µCi)</option>
+                <option value="nCi">Nanocurie (nCi)</option>
+            </select>
+        </div>
+    </form>
+
+    <h2>Resultado:</h2>
+    <div id="resultado-contenedor"></div>
+
+
+    <script>
+        // 1. Objeto con los factores de conversión a la unidad base (Becquerel)
+        const FACTORES_A_BQ = {
+            'Bq': 1,
+            'kBq': 1e3,
+            'MBq': 1e6,
+            'nCi': 37,
+            'uCi': 3.7e4,
+            'mCi': 3.7e7,
+            'Ci': 3.7e10,
+        };
+
+        // 2. Seleccionar los elementos del HTML con los que vamos a trabajar
+        const inputValor = document.getElementById('valor');
+        const selectOrigen = document.getElementById('unidad_origen');
+        const selectDestino = document.getElementById('unidad_destino');
+        const divResultado = document.getElementById('resultado-contenedor');
+
+        // 3. La función que se encarga de hacer el cálculo y mostrar el resultado
+        function calcularYMostrarResultado() {
+            // Obtener los valores actuales del formulario
+            const valor = parseFloat(inputValor.value);
+            const unidadOrigen = selectOrigen.value;
+            const unidadDestino = selectDestino.value;
+
+            // Validar que el valor sea un número
+            if (isNaN(valor)) {
+                divResultado.textContent = 'Por favor, introduce un número válido.';
+                return;
+            }
+
+            // Realizar la conversión
+            // Paso 1: Convertir el valor de origen a nuestra unidad base (Bq)
+            const valorEnBq = valor * FACTORES_A_BQ[unidadOrigen];
+            
+            // Paso 2: Convertir de Bq a la unidad de destino
+            const resultadoFinal = valorEnBq / FACTORES_A_BQ[unidadDestino];
+
+            // Formatear y mostrar el resultado
+            // .toExponential(2) lo muestra en notación científica con 2 decimales
+            divResultado.textContent = `${resultadoFinal.toExponential(2)} ${unidadDestino}`;
+        }
+
+        // 4. Añadir "escuchadores de eventos" a los controles del formulario
+        // Cada vez que el usuario escriba o cambie una opción, se llamará a la función
+        inputValor.addEventListener('input', calcularYMostrarResultado);
+        selectOrigen.addEventListener('change', calcularYMostrarResultado);
+        selectDestino.addEventListener('change', calcularYMostrarResultado);
+
+        // 5. Calcular el resultado una vez al cargar la página por primera vez
+        calcularYMostrarResultado();
+
+    </script>
+
+</body>
+</html>
