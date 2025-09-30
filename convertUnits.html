@@ -15,14 +15,16 @@
 </head>
 <body>
 
-    <h1>Conversor de Unidades Radiactivas ☢️</h1>
-    <p>Realizado con JavaScript puro, sin servidor.</p>
+    <h1>Bq ☢️ Ci</h1>
 
     <form id="conversor-form">
         <div>
             <label for="valor">Valor a convertir:</label>
             <input type="number" id="valor" name="valor" value="1" step="any">
         </div>
+
+        <h2>Resultado:</h2>
+        <div id="resultado-contenedor"></div>
 
         <div>
             <label for="unidad_origen">Unidad de Origen:</label>
@@ -51,8 +53,7 @@
         </div>
     </form>
 
-    <h2>Resultado:</h2>
-    <div id="resultado-contenedor"></div>
+
 
 
     <script>
