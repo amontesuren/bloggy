@@ -176,6 +176,7 @@
             const ahora = new Date();
             fechaInicialEl.value = formatearFechaParaInput(ahora);
             fechaFinalEl.value = formatearFechaParaInput(ahora);
+            actividadInicialEl.value = 1.0;
             const inputs = document.querySelectorAll('#calculadora input, #calculadora select');
             inputs.forEach(input => {
                 input.addEventListener('input', calcularDecaimiento);
