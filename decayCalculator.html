@@ -86,7 +86,7 @@
 </head>
 <body>
 
-    <a href="index.html" class="back-button">&larr; Volver al Conversor de Unidades</a>
+    <a href="index.html" class="back-button">&larr; Volver</a>
 
     <h1>Calculadora de Decaimiento Isotópico ☢️</h1>
 
@@ -169,7 +169,7 @@
             const t = tiempoTranscurridoMs / (1000 * 60 * 60);
             const lambda = Math.log(2) / T_half;
             const At = A0 * Math.exp(-lambda * t);
-            resultadoContenedorEl.textContent = `${At.toFixed(3)} ${unidad}`;
+            resultadoContenedorEl.textContent = `${At.toFixed(1)} ${unidad}`;
         }
 
         function inicializar() {
