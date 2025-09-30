@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora de Decaimiento Radiactivo</title>
+    
+    <style>
+        body { font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif; max-width: 600px; margin: 40px auto; padding: 20px; background-color: #f9f9f9; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        h1 { text-align: center; color: #333; }
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .form-grid .full-width { grid-column: 1 / -1; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input, select { width: 100%; padding: 10px; border-radius: 4px; border: 1px solid #ccc; box-sizing: border-box; font-size: 1em; }
+        #resultado-contenedor { min-height: 50px; background-color: #d4edda; border-left: 5px solid #28a745; margin-top: 20px; padding: 15px; font-size: 1.8em; font-weight: bold; color: #155724; text-align: center; }
+    </style>
+</head>
+<body>
+
+    <h1>Calculadora de Decaimiento Isotópico ☢️</h1>
+
+    <div id="calculadora">
+        <div class="form-grid">
+            <div>
+                <label for="actividad-inicial">Actividad Inicial:</label>
+                <input type="number" id="actividad-inicial" value="100" step="any">
+            </div>
+            <div>
+                <label for="unidad-actividad">Unidad:</label>
+                <select id="unidad-actividad">
+                    <option value="mCi">mCi</option>
+                    <option value="uCi">µCi</option>
+                    <option value="MBq" selected>MBq</option>
+                    <option value="GBq">GBq</option>
+                    <option value="kBq">kBq</option>
+                </select>
+            </div>
+
+            <div class="full-width">
+                <label for="isotopo">Isótopo:</label>
+                <select id="isotopo">
+                    <option value="1.8295">Flúor-18 (F-18)</option>
+                    <option value="6.0058">Tecnecio-99m (Tc-99m)</option>
+                    <option value="160.1">Lutecio-177 (Lu-177)</option>
+                    <option value="192.5">Iodo-131 (I-131)</option>
+                    <option value="1.128">Galio-68 (Ga-68)</option>
+                    <option value="67.31">Indio-111 (In-111)</option>
+                    <option value="2.83">Talio-201 (Tl-201)</option>
+                </select>
+            </div>
+            
+            <div>
+                <label for="fecha-inicial">Fecha de Calibración:</label>
+                <input type="datetime-local" id="fecha-inicial">
+            </div>
+            <div>
+                <label for="fecha-final">Fecha de Destino:</label>
+                <input type="datetime-local" id="fecha-final">
+            </div>
+        </div>
+
+        <div id="resultado-contenedor"></div>
+    </div>
+
+    <script>
+        // --- ELEMENTOS DEL DOM ---
+        const actividadInicialEl = document.getElementById('actividad-inicial');
+        const unidadActividadEl = document.getElementById('unidad-actividad');
+        const isotopoEl = document.getElementById('isotopo');
+        const fechaInicialEl = document.getElementById('fecha-inicial');
+        const fechaFinalEl = document.getElementById('fecha-final');
+        const resultadoContenedorEl = document.getElementById('resultado-contenedor');
+
+        // --- LÓGICA DE LA APLICACIÓN ---
+
+        /**
+         * Formatea un objeto Date a un string compatible con el input datetime-local (YYYY-MM-DDTHH:mm)
+         */
+        function formatearFechaParaInput(date) {
+            const pad = (num) => num.toString().padStart(2, '0');
+            const anio = date.getFullYear();
+            const mes = pad(date.getMonth() + 1);
+            const dia = pad(date.getDate());
+            const horas = pad(date.getHours());
+            const minutos = pad(date.getMinutes());
+            return `${anio}-${mes}-${dia}T${horas}:${minutos}`;
+        }
+
+        /**
+         * Función principal que calcula el decaimiento y actualiza la UI
+         */
+        function calcularDecaimiento() {
+            // 1. Obtener valores de los inputs
+            const A0 = parseFloat(actividadInicialEl.value); // Actividad inicial
+            const T_half = parseFloat(isotopoEl.value); // Vida media en horas (del value del <option>)
+            const unidad = unidadActividadEl.value;
+            
+            const fechaInicial = new Date(fechaInicialEl.value);
+            const fechaFinal = new Date(fechaFinalEl.value);
+
+            // 2. Validar entradas
+            if (isNaN(A0) || isNaN(T_half) || !fechaInicial.getTime() || !fechaFinal.getTime()) {
+                resultadoContenedorEl.textContent = "Entrada inválida";
+                return;
+            }
+
+            // 3. Calcular el tiempo transcurrido en horas
+            const tiempoTranscurridoMs = fechaFinal - fechaInicial; // Diferencia en milisegundos
+            const t = tiempoTranscurridoMs / (1000 * 60 * 60); // Convertir a horas
+
+            // 4. Calcular la constante de decaimiento (lambda)
+            const lambda = Math.log(2) / T_half;
+
+            // 5. Aplicar la fórmula de decaimiento: A(t) = A0 * e^(-λt)
+            const At = A0 * Math.exp(-lambda * t);
+
+            // 6. Mostrar el resultado
+            resultadoContenedorEl.textContent = `${At.toFixed(3)} ${unidad}`;
+        }
+
+        /**
+         * Función de inicialización
+         */
+        function inicializar() {
+            // Establecer las fechas por defecto al momento actual
+            const ahora = new Date();
+            fechaInicialEl.value = formatearFechaParaInput(ahora);
+            fechaFinalEl.value = formatearFechaParaInput(ahora);
+
+            // Añadir los "event listeners" a todos los inputs
+            const inputs = document.querySelectorAll('#calculadora input, #calculadora select');
+            inputs.forEach(input => {
+                input.addEventListener('input', calcularDecaimiento);
+            });
+
+            // Realizar el primer cálculo al cargar la página
+            calcularDecaimiento();
+        }
+
+        // --- INICIAR LA APLICACIÓN ---
+        inicializar();
+    </script>
+
+</body>
+</html>
