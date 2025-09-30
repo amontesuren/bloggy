@@ -74,7 +74,7 @@
 </head>
 <body>
 
-    <h1>Calculadora de Decaimiento Isotópico ☢️</h1>
+    <h1>Decay ☢️</h1>
 
     <div id="calculadora">
         <div class="form-grid">
@@ -155,7 +155,7 @@
             const t = tiempoTranscurridoMs / (1000 * 60 * 60);
             const lambda = Math.log(2) / T_half;
             const At = A0 * Math.exp(-lambda * t);
-            resultadoContenedorEl.textContent = `${At.toFixed(3)} ${unidad}`;
+            resultadoContenedorEl.textContent = `${At.toFixed(1)} ${unidad}`;
         }
 
         function inicializar() {
