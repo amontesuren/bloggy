@@ -7,6 +7,23 @@
     
     <style>
         body { font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif; max-width: 500px; margin: 40px auto; padding: 20px; background-color: #f9f9f9; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        
+        /* --- ESTILOS PARA EL NUEVO BOTÓN --- */
+        .nav-button {
+            display: inline-block;
+            margin-bottom: 20px;
+            padding: 8px 15px;
+            background-color: #28a745; /* Color verde */
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+            transition: background-color 0.2s;
+        }
+        .nav-button:hover {
+            background-color: #218838;
+        }
+
         form > div { margin-bottom: 15px; }
         label { display: block; margin-bottom: 5px; font-weight: bold; }
         input, select { width: 100%; padding: 10px; border-radius: 4px; border: 1px solid #ccc; box-sizing: border-box; font-size: 1em; }
@@ -15,16 +32,15 @@
 </head>
 <body>
 
-    <h1>Bq ☢️ Ci</h1>
+    <a href="decay_calculator.html" class="nav-button">Ir a Calculadora de Decaimiento &rarr;</a>
+
+    <h1>Conversor de Unidades Bq ☢️ Ci</h1>
 
     <form id="conversor-form">
         <div>
             <label for="valor">Valor a convertir:</label>
             <input type="number" id="valor" name="valor" value="1" step="any">
         </div>
-
-        <h2>Resultado:</h2>
-        <div id="resultado-contenedor"></div>
 
         <div>
             <label for="unidad_origen">Unidad de Origen:</label>
@@ -52,8 +68,9 @@
             </select>
         </div>
     </form>
-
-
+    
+    <h2>Resultado:</h2>
+    <div id="resultado-contenedor"></div>
 
 
     <script>
@@ -88,19 +105,14 @@
             }
 
             // Realizar la conversión
-            // Paso 1: Convertir el valor de origen a nuestra unidad base (Bq)
             const valorEnBq = valor * FACTORES_A_BQ[unidadOrigen];
-            
-            // Paso 2: Convertir de Bq a la unidad de destino
             const resultadoFinal = valorEnBq / FACTORES_A_BQ[unidadDestino];
 
             // Formatear y mostrar el resultado
-            // .toExponential(2) lo muestra en notación científica con 2 decimales
             divResultado.textContent = `${resultadoFinal.toExponential(2)} ${unidadDestino}`;
         }
 
         // 4. Añadir "escuchadores de eventos" a los controles del formulario
-        // Cada vez que el usuario escriba o cambie una opción, se llamará a la función
         inputValor.addEventListener('input', calcularYMostrarResultado);
         selectOrigen.addEventListener('change', calcularYMostrarResultado);
         selectDestino.addEventListener('change', calcularYMostrarResultado);
