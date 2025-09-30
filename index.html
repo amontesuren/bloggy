@@ -560,8 +560,8 @@
         <div class="sidebar-nav">
             <div class="nav-section">
                 <div class="nav-section-title">Aplicaciones</div>
-                <a href="convertUnits.html" class="nav-item active">Conversor Ci-Bq</a>
-                <a href="decayCalculator.html" class="nav-item">Decay Calculator</a>
+                <a href="convertUnits.html" class="nav-item active no-script">Conversor Ci-Bq</a>
+                <a href="decayCalculator.html" class="nav-item no-script">Decay Calculator</a>
             </div>
         </div>
     </div>
@@ -581,8 +581,8 @@
                 <div class="col-6">
                     <div style="margin-bottom: 16px;">
                         <div style="color: var(--text-primary); font-size: 14px; font-weight: 600; margin-bottom: 8px;">📚 Matemáticas</div>
-                        <a href="convertUnits.html" class="nav-item" style="margin: 2px 0;">Conversor Ci-Bq</a>
-                        <a href="decayCalculator.html" class="nav-item" style="margin: 2px 0;">Decay Calculator</a>
+                        <a href="convertUnits.html" class="nav-item no-script" style="margin: 2px 0;">Conversor Ci-Bq</a>
+                        <a href="decayCalculator.html" class="nav-item no-script" style="margin: 2px 0;">Decay Calculator</a>
                         <a href="#" class="nav-item" style="margin: 2px 0;">⚡ Electromagnetismo</a>
                     </div>
                 </div>
@@ -792,6 +792,9 @@ function renderPost(data, container) {
     document.querySelectorAll('.nav-item').forEach(item => {
       const text = item.textContent.trim();
       item.addEventListener('click', function (e) {
+      if (e.target.classList.contains('no-script')) {
+            return;
+        }
         e.preventDefault();
         const encodedTopic = encodeURIComponent(text);
         window.location.href = `/?t=${encodedTopic}`;
