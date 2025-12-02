@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora Lu-177 (Corregida)</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root { --primary: #0f172a; --accent: #2563eb; --bg: #f8fafc; --card: #ffffff; }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: #334155; padding: 20px; }
+        .container { max-width: 1000px; margin: 0 auto; background: var(--card); padding: 30px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.06); }
+        
+        h1 { color: var(--primary); text-align: center; font-size: 1.6rem; margin-bottom: 5px; font-weight: 800; }
+        .subtitle { text-align: center; color: #64748b; font-size: 0.9rem; margin-bottom: 30px; }
+        
+        /* INPUTS */
+        .controls { 
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); 
+            gap: 20px; background: #f1f5f9; padding: 25px; border-radius: 12px; margin-bottom: 20px; 
+        }
+        .input-group label { display: block; font-weight: 700; font-size: 0.8rem; text-transform: uppercase; color: #475569; margin-bottom: 8px; }
+        .input-group select, .input-group input { 
+            width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; 
+            font-size: 1rem; box-sizing: border-box; background: white;
+        }
+        
+        /* INFO BOX */
+        .param-info {
+            background: #eff6ff; border-left: 4px solid var(--accent); padding: 12px;
+            font-size: 0.85rem; color: #1e40af; margin-bottom: 25px; border-radius: 4px;
+        }
+
+        /* TABLA */
+        table { width: 100%; border-collapse: separate; border-spacing: 0; margin-top: 15px; }
+        th { background: #f8fafc; padding: 15px; text-align: left; color: #475569; font-weight: 700; border-bottom: 2px solid #e2e8f0; }
+        td { padding: 15px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
+        
+        .badge { 
+            padding: 6px 12px; border-radius: 999px; font-weight: 700; font-size: 0.8rem; 
+            display: inline-block; min-width: 100px; text-align: center;
+        }
+        .bg-ok { background: #dcfce7; color: #166534; }     
+        .bg-warn { background: #fef9c3; color: #854d0e; }   
+        .bg-err { background: #fee2e2; color: #991b1b; }    
+
+        .debug-btn { font-size: 0.8rem; color: #94a3b8; text-decoration: underline; cursor: pointer; float: right; border:none; background:none; }
+        .debug-row { background: #f8fafc; color: #64748b; font-family: monospace; font-size: 0.75rem; display: none; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Calculadora Dosimétrica Lu-177</h1>
+    <p class="subtitle">Farmacocinética ajustada (DOTA-TATE / PSMA)</p>
+
+    <div class="controls">
+        <div class="input-group">
+            <label>Fármaco</label>
+            <select id="treatment">
+                <option value="dotatate">Lu-DOTA-TATE</option>
+                <option value="psma">Lu-PSMA-617</option>
+            </select>
+        </div>
+        <div class="input-group">
+            <label>Ciclos Totales (c)</label>
+            <input type="number" id="cycles" value="4">
+        </div>
+        <div class="input-group">
+            <label>Momento del Alta</label>
+            <select id="scenario">
+                <option value="24" selected>Alta a las 24h</option>
+                <option value="6">Alta a las 6h</option>
+            </select>
+        </div>
+        <div class="input-group">
+            <label>Tasa a 1m (µSv/h)</label>
+            <input type="number" id="rate" value="20" step="0.5" min="0">
+        </div>
+    </div>
+
+    <div id="paramDisplay" class="param-info">Cargando datos...</div>
+    <button class="debug-btn" onclick="toggleDebug()">Ver cálculo matemático</button>
+    <div style="clear:both"></div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Grupo de Convivencia</th>
+                <th>Límite ($RD$)</th>
+                <th>Límite/Ciclo</th>
+                <th>Restricción ($t_f$)</th>
+            </tr>
+        </thead>
+        <tbody id="resultsBody"></tbody>
+    </table>
+
+    <div style="margin-top: 40px; height: 300px;">
+        <canvas id="decayChart"></canvas>
+    </div>
+</div>
+
+<script>
+    // --- DATOS ESPECÍFICOS POR FÁRMACO ---
+    const TREATMENTS = {
+        dotatate: {
+            name: "Lu-DOTA-TATE",
+            cycles_default: 4,
+            tef1: 25.0, // T_eff fase rápida (h)
+            tef2: 55.0  // T_eff fase lenta (h)
+        },
+        psma: {
+            name: "Lu-PSMA-617",
+            cycles_default: 6,
+            tef1: 22.0, 
+            tef2: 42.0 
+        }
+    };
+
+    const LN2 = 0.69314718;
+
+    const groups = [
+        { name: "Pareja (Embarazada)", lim: 1.0, fn: 2.33, fr: 0.06 },
+        { name: "Pareja (< 60 años)",  lim: 3.0, fn: 2.33, fr: 0.25 },
+        { name: "Pareja (> 60 años)",  lim: 5.0, fn: 2.33, fr: 0.25 },
+        { name: "Niños (< 2 años)",    lim: 1.0, fn: 2.28, fr: 0.06 },
+        { name: "Niños (2-5 años)",    lim: 1.0, fn: 1.38, fr: 0.09 },
+        { name: "Niños (5-11 años)",   lim: 1.0, fn: 0.69, fr: 0.09 },
+        { name: "Niños (> 11 años)",   lim: 1.0, fn: 0.43, fr: 0.06 },
+        { name: "Trabajo General",     lim: 0.3, fn: 0.33, fr: 0.0001 },
+        { name: "Trabajo Niños",       lim: 0.3, fn: 0.91, fr: 0.0001 }
+    ];
+
+    let chart = null;
+    let showDebug = false;
+
+    // --- LOGICA UI ---
+    const uiTreatment = document.getElementById('treatment');
+    const uiCycles = document.getElementById('cycles');
+    const uiScenario = document.getElementById('scenario');
+    const uiRate = document.getElementById('rate');
+
+    uiTreatment.addEventListener('change', () => {
+        const type = uiTreatment.value;
+        uiCycles.value = TREATMENTS[type].cycles_default;
+        calcular();
+    });
+
+    [uiCycles, uiScenario, uiRate].forEach(el => el.addEventListener('input', calcular));
+
+    function toggleDebug() { showDebug = !showDebug; calcular(); }
+
+    // --- CÁLCULO ---
+    function calcular() {
+        const params = TREATMENTS[uiTreatment.value];
+        const H_dot = parseFloat(uiRate.value) || 0;
+        const C = parseFloat(uiCycles.value) || 1;
+        const sc = uiScenario.value;
+        const tau = (sc === "6") ? 18.0 : 0.0;
+        
+        // Info visual
+        document.getElementById('paramDisplay').innerHTML = `
+            <strong>${params.name}:</strong> T<sub>ef,1</sub>=${params.tef1}h, T<sub>ef,2</sub>=${params.tef2}h. 
+            (Límite divido entre ${C} ciclos).
+        `;
+
+        const T1 = params.tef1;
+        const T2 = params.tef2;
+        const tbody = document.getElementById('resultsBody');
+        tbody.innerHTML = "";
+
+        groups.forEach(g => {
+            const RD_c_uSv = (g.lim / C) * 1000.0;
+            let tf = 0;
+            let debugStr = "";
+
+            try {
+                const term_limit = LN2 * RD_c_uSv;
+
+                if (sc === "24") {
+                    // Ec. 5
+                    const num = H_dot * T2 * (g.fn - g.fr);
+                    const den = term_limit - (g.fr * H_dot * T2);
+                    debugStr = `Ec.5: Num=${Math.round(num)} Den=${Math.round(den)}`;
+
+                    if (den <= 0) tf = 999;
+                    else {
+                        const arg = num / den;
+                        tf = (arg <= 0) ? 0 : (T2 / LN2) * Math.log(arg);
+                    }
+                } else {
+                    // Ec. 3
+                    const exp_tau = Math.exp(-(LN2 * tau) / T1);
+                    const num = H_dot * T2 * (g.fn - g.fr) * exp_tau;
+                    const eff_time_restr = T1 + (exp_tau * (T2 - T1));
+                    const den = term_limit - (g.fr * H_dot * eff_time_restr);
+                    debugStr = `Ec.3: Num=${Math.round(num)} Den=${Math.round(den)}`;
+
+                    if (den <= 0) tf = 999;
+                    else {
+                        const arg = num / den;
+                        // OJO: arg puede ser muy pequeño y log(arg) muy negativo
+                        // tf = tau + log... puede dar negativo si log es muy fuerte
+                        tf = (arg <= 0) ? 0 : tau + (T2 / LN2) * Math.log(arg);
+                    }
+                }
+            } catch (e) { tf = 999; }
+
+            // --- CORRECCIÓN FINAL (CLAMPING) ---
+            // Si el resultado es negativo (ej: -1.5h), significa que cumple de sobra
+            if (tf < 0) tf = 0;
+
+            // Renderizado
+            const days = (tf > 1440) ? 61 : Math.ceil(tf/24);
+            let badgeClass = 'bg-err', badgeText = '> 60 días';
+
+            if (days === 0) { 
+                badgeClass = 'bg-ok'; badgeText = 'Vida Normal'; 
+            } else if (days <= 60) {
+                badgeText = `${days} días`;
+                badgeClass = (days <= 5) ? 'bg-warn' : 'bg-err';
+            }
+
+            let row = `
+                <tr>
+                    <td><b>${g.name}</b></td>
+                    <td>${g.lim} mSv</td>
+                    <td>${(g.lim/C).toFixed(3)} mSv</td>
+                    <td><span class="badge ${badgeClass}">${badgeText}</span></td>
+                </tr>`;
+            
+            if(showDebug) row += `<tr class="debug-row"><td colspan="4">DEBUG: ${debugStr} | Raw tf=${tf.toFixed(2)}h</td></tr>`;
+            tbody.innerHTML += row;
+        });
+
+        updateChart(H_dot, tau, T1, T2);
+    }
+
+    function updateChart(H0, tau, T1, T2) {
+        const ctx = document.getElementById('decayChart').getContext('2d');
+        if (chart) chart.destroy();
+        const labels = [], data = [];
+        const lam1 = LN2 / T1, lam2 = LN2 / T2;
+
+        for(let h=0; h<=168; h+=4) { // 7 días
+            labels.push((h/24).toFixed(1) + "d");
+            let val = (h <= tau) 
+                ? H0 * Math.exp(-lam1 * h)
+                : (H0 * Math.exp(-lam1 * tau)) * Math.exp(-lam2 * (h - tau));
+            data.push(val);
+        }
+
+        chart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Tasa Estimada (µSv/h)',
+                    data: data,
+                    borderColor: '#2563eb',
+                    backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                    fill: true,
+                    tension: 0.3, pointRadius: 0
+                }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                scales: { y: { beginAtZero: true, title: {display:true, text:'µSv/h'} } }
+            }
+        });
+    }
+
+    calcular(); // Init
+</script>
+</body>
+</html>
