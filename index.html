@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/nord.min.css">
+    <link rel="stylesheet" href="styles.css">
 
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
@@ -27,181 +28,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.min.js"></script>
 
     <style>
-        /* ===== VARIABLES (Nord) ===== */
-        :root {
-            --bg-primary:   #2e3440;
-            --bg-secondary: #3b4252;
-            --bg-tertiary:  #434c5e;
-            --text-primary:   #eceff4;
-            --text-secondary: #d8dee9;
-            --text-muted:     #7b88a1;
-            --accent-blue:   #88c0d0;
-            --accent-orange: #ebcb8b;
-            --border:     #4c566a;
-            --border-sub: #434c5e;
-            --sidebar-w: 260px;
-            --topbar-h:  54px;
-        }
-
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-        body {
-            background: var(--bg-primary);
-            color: var(--text-primary);
-            font-family: 'Inter', system-ui, sans-serif;
-            font-size: 15px;
-            line-height: 1.65;
-        }
-
-        a { color: var(--accent-blue); text-decoration: none; }
-        a:hover { text-decoration: underline; }
-        ::selection { background: var(--accent-blue); color: var(--bg-primary); }
-
-        ::-webkit-scrollbar { width: 5px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
-        ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
-
-        /* ===== SIDEBAR ===== */
-        .sidebar {
-            position: fixed;
-            top: 0; left: 0;
-            width: var(--sidebar-w);
-            height: 100vh;
-            background: var(--bg-secondary);
-            border-right: 1px solid var(--border);
-            display: flex;
-            flex-direction: column;
-            z-index: 200;
-            overflow-y: auto;
-        }
-
-        .sidebar-brand {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 16px 20px;
-            border-bottom: 1px solid var(--border);
-            color: var(--text-primary);
-            text-decoration: none;
-        }
-        .sidebar-brand:hover { color: var(--text-primary); text-decoration: none; }
-
-        .s-avatar {
-            width: 34px; height: 34px;
-            border-radius: 50%;
-            background: url(logo.png) center / cover;
-            border: 2px solid var(--accent-blue);
-            flex-shrink: 0;
-        }
-
-        .s-name {
-            font-size: 14px;
-            font-weight: 600;
-            white-space: nowrap;
-        }
-
-        .cursor { animation: blink 1.2s step-end infinite; }
-        @keyframes blink { 50% { opacity: 0; } }
-
-        .sidebar-nav { flex: 1; padding: 8px 0; }
-
-        .nav-section { margin-bottom: 2px; }
-
-        .nav-section-label {
-            display: block;
-            font-size: 10.5px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.9px;
-            color: var(--text-muted);
-            padding: 12px 20px 5px;
-        }
-
-        .nav-link-item {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 7px 20px;
-            font-size: 13.5px;
-            color: var(--text-secondary);
-            text-decoration: none;
-            border-left: 2px solid transparent;
-            transition: background 0.12s, color 0.12s, border-color 0.12s;
-        }
-        .nav-link-item:hover { color: var(--text-primary); background: rgba(255,255,255,0.05); text-decoration: none; }
-        .nav-link-item.active {
-            color: var(--accent-blue);
-            background: rgba(136,192,208,0.1);
-            border-left-color: var(--accent-blue);
-            font-weight: 500;
-        }
-        .nav-link-item i { font-size: 14px; width: 16px; text-align: center; flex-shrink: 0; }
-
-        .sidebar-footer {
-            padding: 14px 20px;
-            border-top: 1px solid var(--border);
-            font-size: 11px;
-            color: var(--text-muted);
-            line-height: 1.5;
-        }
-
-        /* ===== TOPBAR (mobile) ===== */
-        .topbar {
-            display: none;
-            align-items: center;
-            gap: 12px;
-            height: var(--topbar-h);
-            padding: 0 16px;
-            background: var(--bg-secondary);
-            border-bottom: 1px solid var(--border);
-            position: sticky;
-            top: 0;
-            z-index: 150;
-        }
-        .topbar-logo {
-            width: 28px; height: 28px;
-            border-radius: 50%;
-            background: url(logo.png) center / cover;
-            border: 1.5px solid var(--accent-blue);
-            flex-shrink: 0;
-        }
-        .topbar-name {
-            flex: 1;
-            font-size: 14px;
-            font-weight: 600;
-        }
-        .topbar-toggle {
-            background: none;
-            border: none;
-            color: var(--text-secondary);
-            font-size: 22px;
-            padding: 4px 6px;
-            cursor: pointer;
-            border-radius: 6px;
-            line-height: 1;
-        }
-        .topbar-toggle:hover { color: var(--text-primary); background: var(--bg-tertiary); }
-
-        /* ===== OFFCANVAS ===== */
-        .offcanvas {
-            background: var(--bg-secondary) !important;
-            color: var(--text-primary) !important;
-            width: var(--sidebar-w) !important;
-        }
-        .offcanvas-header {
-            padding: 16px 20px;
-            border-bottom: 1px solid var(--border);
-        }
-
-        /* ===== LAYOUT ===== */
-        .main-content { margin-left: var(--sidebar-w); }
-
-        .page-body {
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 48px 32px 80px;
-        }
+        .page-body { max-width: 800px; }
 
         /* ===== HERO ===== */
         .hero {
@@ -344,84 +171,16 @@
 
         /* ===== RESPONSIVE ===== */
         @media (max-width: 991px) {
-            .sidebar { display: none !important; }
-            .main-content { margin-left: 0; }
-            .topbar { display: flex; }
-            .page-body { padding: 24px 20px 60px; }
             .hero { flex-direction: column; text-align: center; padding: 24px; gap: 16px; }
             .hero-name { font-size: 1.5rem; }
         }
         @media (max-width: 576px) {
-            .page-body { padding: 16px 12px 48px; }
             .post-card { padding: 20px; }
             .hero-avatar { width: 68px; height: 68px; }
         }
     </style>
 </head>
 <body>
-
-<!-- Desktop Sidebar -->
-<aside class="sidebar">
-    <a href="index.html" class="sidebar-brand">
-        <div class="s-avatar"></div>
-        <span class="s-name">Falken's Maze<span class="cursor">_</span></span>
-    </a>
-    <nav class="sidebar-nav">
-        <div class="nav-section">
-            <span class="nav-section-label">Blog</span>
-            <a href="index.html" class="nav-link-item active">
-                <i class="bi bi-house-door"></i> Inicio
-            </a>
-        </div>
-        <div class="nav-section">
-            <span class="nav-section-label">Aplicaciones</span>
-            <a href="convertUnits.html" class="nav-link-item">
-                <i class="bi bi-arrow-left-right"></i> Conversor Ci–Bq
-            </a>
-            <a href="decayCalculator.html" class="nav-link-item">
-                <i class="bi bi-clock-history"></i> Decay Calculator
-            </a>
-            <a href="RestricionesLu177.html" class="nav-link-item">
-                <i class="bi bi-activity"></i> Lu-177 Restricciones
-            </a>
-        </div>
-    </nav>
-    <div class="sidebar-footer">Física Médica &amp; Medicina Nuclear</div>
-</aside>
-
-<!-- Mobile Topbar -->
-<header class="topbar">
-    <button class="topbar-toggle" type="button" data-bs-toggle="offcanvas" data-bs-target="#mobileNav" aria-label="Abrir menú">
-        <i class="bi bi-list"></i>
-    </button>
-    <div class="topbar-logo"></div>
-    <span class="topbar-name">Falken's Maze</span>
-</header>
-
-<!-- Mobile Offcanvas -->
-<div class="offcanvas offcanvas-start" id="mobileNav" tabindex="-1">
-    <div class="offcanvas-header">
-        <div style="display:flex; align-items:center; gap:12px;">
-            <div class="s-avatar"></div>
-            <span class="s-name">Falken's Maze</span>
-        </div>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
-    </div>
-    <div class="offcanvas-body p-0">
-        <nav class="sidebar-nav">
-            <div class="nav-section">
-                <span class="nav-section-label">Blog</span>
-                <a href="index.html" class="nav-link-item active"><i class="bi bi-house-door"></i> Inicio</a>
-            </div>
-            <div class="nav-section">
-                <span class="nav-section-label">Aplicaciones</span>
-                <a href="convertUnits.html" class="nav-link-item"><i class="bi bi-arrow-left-right"></i> Conversor Ci–Bq</a>
-                <a href="decayCalculator.html" class="nav-link-item"><i class="bi bi-clock-history"></i> Decay Calculator</a>
-                <a href="RestricionesLu177.html" class="nav-link-item"><i class="bi bi-activity"></i> Lu-177 Restricciones</a>
-            </div>
-        </nav>
-    </div>
-</div>
 
 <!-- Main -->
 <main class="main-content">
@@ -441,6 +200,7 @@
     </div>
 </main>
 
+<script src="nav.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
 <script>
 (function () {

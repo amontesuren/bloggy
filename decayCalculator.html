@@ -8,206 +8,10 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
 
     <style>
-        /* ===== VARIABLES (Nord) ===== */
-        :root {
-            --bg-primary:   #2e3440;
-            --bg-secondary: #3b4252;
-            --bg-tertiary:  #434c5e;
-            --text-primary:   #eceff4;
-            --text-secondary: #d8dee9;
-            --text-muted:     #7b88a1;
-            --accent-blue:   #88c0d0;
-            --accent-green:  #a3be8c;
-            --border:     #4c566a;
-            --border-sub: #434c5e;
-            --sidebar-w: 260px;
-            --topbar-h:  54px;
-        }
-
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-        body {
-            background: var(--bg-primary);
-            color: var(--text-primary);
-            font-family: 'Inter', system-ui, sans-serif;
-            font-size: 15px;
-            line-height: 1.65;
-        }
-
-        a { color: var(--accent-blue); text-decoration: none; }
-        a:hover { text-decoration: underline; }
-        ::selection { background: var(--accent-blue); color: var(--bg-primary); }
-
-        ::-webkit-scrollbar { width: 5px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
-
-        /* ===== SIDEBAR ===== */
-        .sidebar {
-            position: fixed;
-            top: 0; left: 0;
-            width: var(--sidebar-w);
-            height: 100vh;
-            background: var(--bg-secondary);
-            border-right: 1px solid var(--border);
-            display: flex;
-            flex-direction: column;
-            z-index: 200;
-            overflow-y: auto;
-        }
-        .sidebar-brand {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 16px 20px;
-            border-bottom: 1px solid var(--border);
-            color: var(--text-primary);
-            text-decoration: none;
-        }
-        .sidebar-brand:hover { color: var(--text-primary); text-decoration: none; }
-        .s-avatar {
-            width: 34px; height: 34px;
-            border-radius: 50%;
-            background: url(logo.png) center / cover;
-            border: 2px solid var(--accent-blue);
-            flex-shrink: 0;
-        }
-        .s-name { font-size: 14px; font-weight: 600; white-space: nowrap; }
-
-        .sidebar-nav { flex: 1; padding: 8px 0; }
-        .nav-section { margin-bottom: 2px; }
-        .nav-section-label {
-            display: block;
-            font-size: 10.5px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.9px;
-            color: var(--text-muted);
-            padding: 12px 20px 5px;
-        }
-        .nav-link-item {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 7px 20px;
-            font-size: 13.5px;
-            color: var(--text-secondary);
-            text-decoration: none;
-            border-left: 2px solid transparent;
-            transition: background 0.12s, color 0.12s, border-color 0.12s;
-        }
-        .nav-link-item:hover { color: var(--text-primary); background: rgba(255,255,255,0.05); text-decoration: none; }
-        .nav-link-item.active {
-            color: var(--accent-blue);
-            background: rgba(136,192,208,0.1);
-            border-left-color: var(--accent-blue);
-            font-weight: 500;
-        }
-        .nav-link-item i { font-size: 14px; width: 16px; text-align: center; flex-shrink: 0; }
-
-        .sidebar-footer {
-            padding: 14px 20px;
-            border-top: 1px solid var(--border);
-            font-size: 11px;
-            color: var(--text-muted);
-        }
-
-        /* ===== TOPBAR (mobile) ===== */
-        .topbar {
-            display: none;
-            align-items: center;
-            gap: 12px;
-            height: var(--topbar-h);
-            padding: 0 16px;
-            background: var(--bg-secondary);
-            border-bottom: 1px solid var(--border);
-            position: sticky;
-            top: 0;
-            z-index: 150;
-        }
-        .topbar-logo {
-            width: 28px; height: 28px;
-            border-radius: 50%;
-            background: url(logo.png) center / cover;
-            border: 1.5px solid var(--accent-blue);
-            flex-shrink: 0;
-        }
-        .topbar-name { flex: 1; font-size: 14px; font-weight: 600; }
-        .topbar-toggle {
-            background: none; border: none;
-            color: var(--text-secondary);
-            font-size: 22px; padding: 4px 6px;
-            cursor: pointer; border-radius: 6px; line-height: 1;
-        }
-        .topbar-toggle:hover { color: var(--text-primary); background: var(--bg-tertiary); }
-
-        /* ===== OFFCANVAS ===== */
-        .offcanvas {
-            background: var(--bg-secondary) !important;
-            color: var(--text-primary) !important;
-            width: var(--sidebar-w) !important;
-        }
-        .offcanvas-header { padding: 16px 20px; border-bottom: 1px solid var(--border); }
-
-        /* ===== LAYOUT ===== */
-        .main-content { margin-left: var(--sidebar-w); }
-        .page-body {
-            max-width: 700px;
-            margin: 0 auto;
-            padding: 48px 32px 80px;
-        }
-
-        /* ===== PAGE HEADER ===== */
-        .page-header { margin-bottom: 32px; }
-        .page-icon { font-size: 2rem; color: var(--accent-blue); margin-bottom: 10px; }
-        .page-title { font-size: 1.6rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 6px; }
-        .page-subtitle { color: var(--text-muted); font-size: 14px; }
-
-        /* ===== CALC CARD ===== */
-        .calc-card {
-            background: var(--bg-secondary);
-            border: 1px solid var(--border);
-            border-radius: 14px;
-            padding: 32px;
-        }
-
-        .field-label {
-            display: block;
-            font-size: 11px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.6px;
-            color: var(--text-muted);
-            margin-bottom: 8px;
-        }
-
-        .dark-input, .dark-select {
-            width: 100%;
-            background: var(--bg-tertiary);
-            border: 1px solid var(--border);
-            color: var(--text-primary);
-            border-radius: 8px;
-            padding: 10px 14px;
-            font-size: 15px;
-            font-family: 'Inter', sans-serif;
-            transition: border-color 0.15s, box-shadow 0.15s;
-            appearance: none;
-            -webkit-appearance: none;
-            color-scheme: dark;
-        }
-        .dark-input:focus, .dark-select:focus {
-            outline: none;
-            border-color: var(--accent-blue);
-            box-shadow: 0 0 0 3px rgba(136,192,208,0.15);
-        }
-        .dark-select {
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%236e7681' d='M6 8L0 0h12z'/%3E%3C/svg%3E");
-            background-repeat: no-repeat;
-            background-position: right 14px center;
-            padding-right: 38px;
-        }
+        .page-body { max-width: 700px; }
 
         .form-grid {
             display: grid;
@@ -231,7 +35,6 @@
             grid-column: 1 / -1;
         }
 
-        /* ===== FORMULA NOTE ===== */
         .formula-note {
             margin-top: 20px;
             padding: 14px 18px;
@@ -242,84 +45,13 @@
             color: var(--text-muted);
         }
 
-        /* ===== RESPONSIVE ===== */
-        @media (max-width: 991px) {
-            .sidebar { display: none !important; }
-            .main-content { margin-left: 0; }
-            .topbar { display: flex; }
-            .page-body { padding: 24px 20px 60px; }
-        }
         @media (max-width: 576px) {
-            .page-body { padding: 16px 12px 48px; }
             .calc-card { padding: 20px; }
             .form-grid { grid-template-columns: 1fr; }
         }
     </style>
 </head>
 <body>
-
-<!-- Desktop Sidebar -->
-<aside class="sidebar">
-    <a href="index.html" class="sidebar-brand">
-        <div class="s-avatar"></div>
-        <span class="s-name">Falken's Maze</span>
-    </a>
-    <nav class="sidebar-nav">
-        <div class="nav-section">
-            <span class="nav-section-label">Blog</span>
-            <a href="index.html" class="nav-link-item">
-                <i class="bi bi-house-door"></i> Inicio
-            </a>
-        </div>
-        <div class="nav-section">
-            <span class="nav-section-label">Aplicaciones</span>
-            <a href="convertUnits.html" class="nav-link-item">
-                <i class="bi bi-arrow-left-right"></i> Conversor Ci–Bq
-            </a>
-            <a href="decayCalculator.html" class="nav-link-item active">
-                <i class="bi bi-clock-history"></i> Decay Calculator
-            </a>
-            <a href="RestricionesLu177.html" class="nav-link-item">
-                <i class="bi bi-activity"></i> Lu-177 Restricciones
-            </a>
-        </div>
-    </nav>
-    <div class="sidebar-footer">Física Médica &amp; Medicina Nuclear</div>
-</aside>
-
-<!-- Mobile Topbar -->
-<header class="topbar">
-    <button class="topbar-toggle" type="button" data-bs-toggle="offcanvas" data-bs-target="#mobileNav" aria-label="Abrir menú">
-        <i class="bi bi-list"></i>
-    </button>
-    <div class="topbar-logo"></div>
-    <span class="topbar-name">Decay Calculator</span>
-</header>
-
-<!-- Mobile Offcanvas -->
-<div class="offcanvas offcanvas-start" id="mobileNav" tabindex="-1">
-    <div class="offcanvas-header">
-        <div style="display:flex; align-items:center; gap:12px;">
-            <div class="s-avatar"></div>
-            <span class="s-name">Falken's Maze</span>
-        </div>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
-    </div>
-    <div class="offcanvas-body p-0">
-        <nav class="sidebar-nav">
-            <div class="nav-section">
-                <span class="nav-section-label">Blog</span>
-                <a href="index.html" class="nav-link-item"><i class="bi bi-house-door"></i> Inicio</a>
-            </div>
-            <div class="nav-section">
-                <span class="nav-section-label">Aplicaciones</span>
-                <a href="convertUnits.html" class="nav-link-item"><i class="bi bi-arrow-left-right"></i> Conversor Ci–Bq</a>
-                <a href="decayCalculator.html" class="nav-link-item active"><i class="bi bi-clock-history"></i> Decay Calculator</a>
-                <a href="RestricionesLu177.html" class="nav-link-item"><i class="bi bi-activity"></i> Lu-177 Restricciones</a>
-            </div>
-        </nav>
-    </div>
-</div>
 
 <!-- Main -->
 <main class="main-content">
@@ -382,6 +114,7 @@
     </div>
 </main>
 
+<script src="nav.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
 <script>
     const actividadInicialEl    = document.getElementById('actividad-inicial');
