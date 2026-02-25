@@ -3,129 +3,475 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Calculadora Lu-177</title>
+    <title>Lu-177 Restricciones · Falken's Maze</title>
+
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
     <style>
-        :root { --primary: #0f172a; --accent: #2563eb; --bg: #f8fafc; --card: #ffffff; }
-        body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: #334155; padding: 20px; }
-        .container { max-width: 1000px; margin: 0 auto; background: var(--card); padding: 30px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.06); }
-        
-        h1 { color: var(--primary); text-align: center; font-size: 1.6rem; margin-bottom: 5px; font-weight: 800; }
-        .subtitle { text-align: center; color: #64748b; font-size: 0.9rem; margin-bottom: 30px; }
-        
-        /* INPUTS */
-        .controls { 
-            display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); 
-            gap: 20px; background: #f1f5f9; padding: 25px; border-radius: 12px; margin-bottom: 20px; 
+        /* ===== VARIABLES ===== */
+        :root {
+            --bg-primary:   #0d1117;
+            --bg-secondary: #161b22;
+            --bg-tertiary:  #21262d;
+            --text-primary:   #e6edf3;
+            --text-secondary: #8b949e;
+            --text-muted:     #6e7681;
+            --accent-blue:   #58a6ff;
+            --accent-green:  #3fb950;
+            --accent-yellow: #d29922;
+            --accent-red:    #f85149;
+            --border:     #30363d;
+            --border-sub: #21262d;
+            --sidebar-w: 260px;
+            --topbar-h:  54px;
         }
-        .input-group label { display: block; font-weight: 700; font-size: 0.8rem; text-transform: uppercase; color: #475569; margin-bottom: 8px; }
-        .input-group select, .input-group input { 
-            width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; 
-            font-size: 1rem; box-sizing: border-box; background: white;
+
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            font-family: 'Inter', system-ui, sans-serif;
+            font-size: 15px;
+            line-height: 1.65;
         }
-        
-        /* INFO BOX */
+
+        a { color: var(--accent-blue); text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        ::selection { background: var(--accent-blue); color: var(--bg-primary); }
+
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+        /* ===== SIDEBAR ===== */
+        .sidebar {
+            position: fixed;
+            top: 0; left: 0;
+            width: var(--sidebar-w);
+            height: 100vh;
+            background: var(--bg-secondary);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            z-index: 200;
+            overflow-y: auto;
+        }
+        .sidebar-brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border);
+            color: var(--text-primary);
+            text-decoration: none;
+        }
+        .sidebar-brand:hover { color: var(--text-primary); text-decoration: none; }
+        .s-avatar {
+            width: 34px; height: 34px;
+            border-radius: 50%;
+            background: url(logo.png) center / cover;
+            border: 2px solid var(--accent-blue);
+            flex-shrink: 0;
+        }
+        .s-name { font-size: 14px; font-weight: 600; white-space: nowrap; }
+
+        .sidebar-nav { flex: 1; padding: 8px 0; }
+        .nav-section { margin-bottom: 2px; }
+        .nav-section-label {
+            display: block;
+            font-size: 10.5px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.9px;
+            color: var(--text-muted);
+            padding: 12px 20px 5px;
+        }
+        .nav-link-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 7px 20px;
+            font-size: 13.5px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            border-left: 2px solid transparent;
+            transition: background 0.12s, color 0.12s, border-color 0.12s;
+        }
+        .nav-link-item:hover { color: var(--text-primary); background: rgba(255,255,255,0.05); text-decoration: none; }
+        .nav-link-item.active {
+            color: var(--accent-blue);
+            background: rgba(88,166,255,0.08);
+            border-left-color: var(--accent-blue);
+            font-weight: 500;
+        }
+        .nav-link-item i { font-size: 14px; width: 16px; text-align: center; flex-shrink: 0; }
+
+        .sidebar-footer {
+            padding: 14px 20px;
+            border-top: 1px solid var(--border);
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        /* ===== TOPBAR (mobile) ===== */
+        .topbar {
+            display: none;
+            align-items: center;
+            gap: 12px;
+            height: var(--topbar-h);
+            padding: 0 16px;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 0;
+            z-index: 150;
+        }
+        .topbar-logo {
+            width: 28px; height: 28px;
+            border-radius: 50%;
+            background: url(logo.png) center / cover;
+            border: 1.5px solid var(--accent-blue);
+            flex-shrink: 0;
+        }
+        .topbar-name { flex: 1; font-size: 14px; font-weight: 600; }
+        .topbar-toggle {
+            background: none; border: none;
+            color: var(--text-secondary);
+            font-size: 22px; padding: 4px 6px;
+            cursor: pointer; border-radius: 6px; line-height: 1;
+        }
+        .topbar-toggle:hover { color: var(--text-primary); background: var(--bg-tertiary); }
+
+        /* ===== OFFCANVAS ===== */
+        .offcanvas {
+            background: var(--bg-secondary) !important;
+            color: var(--text-primary) !important;
+            width: var(--sidebar-w) !important;
+        }
+        .offcanvas-header { padding: 16px 20px; border-bottom: 1px solid var(--border); }
+
+        /* ===== LAYOUT ===== */
+        .main-content { margin-left: var(--sidebar-w); }
+        .page-body {
+            max-width: 960px;
+            margin: 0 auto;
+            padding: 48px 32px 80px;
+        }
+
+        /* ===== PAGE HEADER ===== */
+        .page-header { margin-bottom: 32px; }
+        .page-icon { font-size: 2rem; color: var(--accent-blue); margin-bottom: 10px; }
+        .page-title { font-size: 1.6rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 6px; }
+        .page-subtitle { color: var(--text-muted); font-size: 14px; }
+
+        /* ===== CALC CARD ===== */
+        .calc-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 28px 32px;
+            margin-bottom: 20px;
+        }
+
+        /* ===== CONTROLS GRID ===== */
+        .controls-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .field-label {
+            display: block;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+        }
+        .dark-input, .dark-select {
+            width: 100%;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            border-radius: 8px;
+            padding: 10px 14px;
+            font-size: 14px;
+            font-family: 'Inter', sans-serif;
+            transition: border-color 0.15s, box-shadow 0.15s;
+            appearance: none;
+            -webkit-appearance: none;
+        }
+        .dark-input:focus, .dark-select:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 3px rgba(88,166,255,0.15);
+        }
+        .dark-select {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%236e7681' d='M6 8L0 0h12z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 14px center;
+            padding-right: 38px;
+        }
+
+        /* ===== INFO BOX ===== */
         .param-info {
-            background: #eff6ff; border-left: 4px solid var(--accent); padding: 12px;
-            font-size: 0.85rem; color: #1e40af; margin-bottom: 25px; border-radius: 4px;
+            background: rgba(88,166,255,0.06);
+            border-left: 3px solid var(--accent-blue);
+            border-radius: 0 6px 6px 0;
+            padding: 10px 16px;
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-bottom: 20px;
         }
 
-        /* TABLA */
-        table { width: 100%; border-collapse: separate; border-spacing: 0; margin-top: 15px; }
-        th { background: #f8fafc; padding: 15px; text-align: left; color: #475569; font-weight: 700; border-bottom: 2px solid #e2e8f0; }
-        td { padding: 15px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
-        
-        .badge { 
-            padding: 6px 12px; border-radius: 999px; font-weight: 700; font-size: 0.8rem; 
-            display: inline-block; min-width: 100px; text-align: center;
+        /* ===== DEBUG LINK ===== */
+        .debug-btn {
+            font-size: 12px;
+            color: var(--text-muted);
+            text-decoration: underline;
+            cursor: pointer;
+            background: none;
+            border: none;
+            float: right;
         }
-        .bg-ok { background: #dcfce7; color: #166534; }     
-        .bg-warn { background: #fef9c3; color: #854d0e; }   
-        .bg-err { background: #fee2e2; color: #991b1b; }    
+        .debug-btn:hover { color: var(--text-secondary); }
 
-        .debug-btn { font-size: 0.8rem; color: #94a3b8; text-decoration: underline; cursor: pointer; float: right; border:none; background:none; }
-        .debug-row { background: #f8fafc; color: #64748b; font-family: monospace; font-size: 0.75rem; display: none; }
+        /* ===== TABLE ===== */
+        .results-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+        .results-table th {
+            background: var(--bg-tertiary);
+            color: var(--text-muted);
+            font-weight: 600;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 11px 16px;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+        .results-table td {
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border-sub);
+            vertical-align: middle;
+            color: var(--text-secondary);
+        }
+        .results-table tr:last-child td { border-bottom: none; }
+        .results-table tr:hover td { background: rgba(255,255,255,0.02); }
+        .results-table td:first-child { color: var(--text-primary); font-weight: 500; }
+
+        /* ===== BADGES ===== */
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 12px;
+            min-width: 100px;
+            text-align: center;
+        }
+        .bg-ok   { background: rgba(63,185,80,0.15);  color: var(--accent-green);  border: 1px solid rgba(63,185,80,0.3); }
+        .bg-warn { background: rgba(210,153,34,0.15); color: var(--accent-yellow); border: 1px solid rgba(210,153,34,0.3); }
+        .bg-err  { background: rgba(248,81,73,0.15);  color: var(--accent-red);    border: 1px solid rgba(248,81,73,0.3); }
+
+        /* ===== DEBUG ROW ===== */
+        .debug-row {
+            background: var(--bg-tertiary);
+            color: var(--text-muted);
+            font-family: monospace;
+            font-size: 12px;
+            display: none;
+        }
+
+        /* ===== CHART ===== */
+        .chart-wrapper {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 24px 28px;
+            margin-bottom: 20px;
+        }
+        .chart-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 16px;
+        }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 991px) {
+            .sidebar { display: none !important; }
+            .main-content { margin-left: 0; }
+            .topbar { display: flex; }
+            .page-body { padding: 24px 16px 60px; }
+        }
+        @media (max-width: 576px) {
+            .page-body { padding: 16px 10px 48px; }
+            .calc-card { padding: 18px; }
+            .chart-wrapper { padding: 16px; }
+            .results-table th, .results-table td { padding: 10px 10px; }
+            .badge { min-width: 80px; font-size: 11px; }
+        }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <h1>Calculadora Dosimétrica Lu-177</h1>
-    <p class="subtitle">Farmacocinética ajustada (DOTA-TATE / PSMA)</p>
+<!-- Desktop Sidebar -->
+<aside class="sidebar">
+    <a href="index.html" class="sidebar-brand">
+        <div class="s-avatar"></div>
+        <span class="s-name">Falken's Maze</span>
+    </a>
+    <nav class="sidebar-nav">
+        <div class="nav-section">
+            <span class="nav-section-label">Blog</span>
+            <a href="index.html" class="nav-link-item">
+                <i class="bi bi-house-door"></i> Inicio
+            </a>
+        </div>
+        <div class="nav-section">
+            <span class="nav-section-label">Aplicaciones</span>
+            <a href="convertUnits.html" class="nav-link-item">
+                <i class="bi bi-arrow-left-right"></i> Conversor Ci–Bq
+            </a>
+            <a href="decayCalculator.html" class="nav-link-item">
+                <i class="bi bi-clock-history"></i> Decay Calculator
+            </a>
+            <a href="RestricionesLu177.html" class="nav-link-item active">
+                <i class="bi bi-activity"></i> Lu-177 Restricciones
+            </a>
+        </div>
+    </nav>
+    <div class="sidebar-footer">Física Médica &amp; Medicina Nuclear</div>
+</aside>
 
-    <div class="controls">
-        <div class="input-group">
-            <label>Fármaco</label>
-            <select id="treatment">
-                <option value="dotatate">Lu-DOTA-TATE</option>
-                <option value="psma">Lu-PSMA-617</option>
-            </select>
+<!-- Mobile Topbar -->
+<header class="topbar">
+    <button class="topbar-toggle" type="button" data-bs-toggle="offcanvas" data-bs-target="#mobileNav" aria-label="Abrir menú">
+        <i class="bi bi-list"></i>
+    </button>
+    <div class="topbar-logo"></div>
+    <span class="topbar-name">Lu-177 Restricciones</span>
+</header>
+
+<!-- Mobile Offcanvas -->
+<div class="offcanvas offcanvas-start" id="mobileNav" tabindex="-1">
+    <div class="offcanvas-header">
+        <div style="display:flex; align-items:center; gap:12px;">
+            <div class="s-avatar"></div>
+            <span class="s-name">Falken's Maze</span>
         </div>
-        <div class="input-group">
-            <label>Ciclos Totales (c)</label>
-            <input type="number" id="cycles" value="4">
-        </div>
-        <div class="input-group">
-            <label>Momento del Alta</label>
-            <select id="scenario">
-                <option value="24" selected>Alta a las 24h</option>
-                <option value="6">Alta a las 6h</option>
-            </select>
-        </div>
-        <div class="input-group">
-            <label>Tasa a 1m (µSv/h)</label>
-            <input type="number" id="rate" value="20" step="0.5" min="0">
-        </div>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
     </div>
-
-    <div id="paramDisplay" class="param-info">Cargando datos...</div>
-    <button class="debug-btn" onclick="toggleDebug()">Ver cálculo matemático</button>
-    <div style="clear:both"></div>
-
-    <table>
-        <thead>
-            <tr>
-                <th>Grupo de Convivencia</th>
-                <th>Límite ($RD$)</th>
-                <th>Límite/Ciclo</th>
-                <th>Restricción ($t_f$)</th>
-            </tr>
-        </thead>
-        <tbody id="resultsBody"></tbody>
-    </table>
-
-    <div style="margin-top: 40px; height: 300px;">
-        <canvas id="decayChart"></canvas>
+    <div class="offcanvas-body p-0">
+        <nav class="sidebar-nav">
+            <div class="nav-section">
+                <span class="nav-section-label">Blog</span>
+                <a href="index.html" class="nav-link-item"><i class="bi bi-house-door"></i> Inicio</a>
+            </div>
+            <div class="nav-section">
+                <span class="nav-section-label">Aplicaciones</span>
+                <a href="convertUnits.html" class="nav-link-item"><i class="bi bi-arrow-left-right"></i> Conversor Ci–Bq</a>
+                <a href="decayCalculator.html" class="nav-link-item"><i class="bi bi-clock-history"></i> Decay Calculator</a>
+                <a href="RestricionesLu177.html" class="nav-link-item active"><i class="bi bi-activity"></i> Lu-177 Restricciones</a>
+            </div>
+        </nav>
     </div>
 </div>
 
+<!-- Main -->
+<main class="main-content">
+    <div class="page-body">
+        <div class="page-header">
+            <div class="page-icon"><i class="bi bi-activity"></i></div>
+            <h1 class="page-title">Restricciones Dosimétrica Lu-177</h1>
+            <p class="page-subtitle">Farmacocinética ajustada · DOTA-TATE / PSMA-617</p>
+        </div>
+
+        <!-- Controls -->
+        <div class="calc-card">
+            <div class="controls-grid">
+                <div>
+                    <label class="field-label">Fármaco</label>
+                    <select id="treatment" class="dark-select">
+                        <option value="dotatate">Lu-DOTA-TATE</option>
+                        <option value="psma">Lu-PSMA-617</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="field-label">Ciclos totales</label>
+                    <input type="number" id="cycles" class="dark-input" value="4">
+                </div>
+                <div>
+                    <label class="field-label">Momento del alta</label>
+                    <select id="scenario" class="dark-select">
+                        <option value="24" selected>Alta a las 24 h</option>
+                        <option value="6">Alta a las 6 h</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="field-label">Tasa a 1 m (µSv/h)</label>
+                    <input type="number" id="rate" class="dark-input" value="20" step="0.5" min="0">
+                </div>
+            </div>
+
+            <div id="paramDisplay" class="param-info">Cargando datos…</div>
+            <button class="debug-btn" onclick="toggleDebug()">Ver cálculo matemático</button>
+            <div style="clear:both"></div>
+
+            <div style="overflow-x: auto; margin-top: 8px;">
+                <table class="results-table">
+                    <thead>
+                        <tr>
+                            <th>Grupo de convivencia</th>
+                            <th>Límite (RD)</th>
+                            <th>Límite / ciclo</th>
+                            <th>Restricción (t<sub>f</sub>)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="resultsBody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Chart -->
+        <div class="chart-wrapper">
+            <div class="chart-title"><i class="bi bi-graph-down" style="margin-right:6px;"></i>Evolución de tasa de dosis estimada</div>
+            <div style="height: 280px;">
+                <canvas id="decayChart"></canvas>
+            </div>
+        </div>
+    </div>
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
 <script>
-    // --- DATOS ESPECÍFICOS POR FÁRMACO ---
     const TREATMENTS = {
-        dotatate: {
-            name: "Lu-DOTA-TATE",
-            cycles_default: 4,
-            tef1: 25.0, // T_eff fase rápida (h)
-            tef2: 55.0  // T_eff fase lenta (h)
-        },
-        psma: {
-            name: "Lu-PSMA-617",
-            cycles_default: 6,
-            tef1: 22.0, 
-            tef2: 42.0 
-        }
+        dotatate: { name: "Lu-DOTA-TATE", cycles_default: 4, tef1: 25.0, tef2: 55.0 },
+        psma:     { name: "Lu-PSMA-617",  cycles_default: 6, tef1: 22.0, tef2: 42.0 }
     };
 
     const LN2 = 0.69314718;
 
     const groups = [
-        { name: "Pareja (Embarazada)", lim: 1.0, fn: 2.33, fr: 0.06 },
-        { name: "Pareja (< 60 años)",  lim: 3.0, fn: 2.33, fr: 0.25 },
-        { name: "Pareja (> 60 años)",  lim: 5.0, fn: 2.33, fr: 0.25 },
-        { name: "Niños (< 2 años)",    lim: 1.0, fn: 2.28, fr: 0.06 },
-        { name: "Niños (2-5 años)",    lim: 1.0, fn: 1.38, fr: 0.09 },
-        { name: "Niños (5-11 años)",   lim: 1.0, fn: 0.69, fr: 0.09 },
-        { name: "Niños (> 11 años)",   lim: 1.0, fn: 0.43, fr: 0.06 },
+        { name: "Pareja (Embarazada)", lim: 1.0, fn: 2.33, fr: 0.06   },
+        { name: "Pareja (< 60 años)",  lim: 3.0, fn: 2.33, fr: 0.25   },
+        { name: "Pareja (> 60 años)",  lim: 5.0, fn: 2.33, fr: 0.25   },
+        { name: "Niños (< 2 años)",    lim: 1.0, fn: 2.28, fr: 0.06   },
+        { name: "Niños (2–5 años)",    lim: 1.0, fn: 1.38, fr: 0.09   },
+        { name: "Niños (5–11 años)",   lim: 1.0, fn: 0.69, fr: 0.09   },
+        { name: "Niños (> 11 años)",   lim: 1.0, fn: 0.43, fr: 0.06   },
         { name: "Trabajo General",     lim: 0.3, fn: 0.33, fr: 0.0001 },
         { name: "Trabajo Niños",       lim: 0.3, fn: 0.91, fr: 0.0001 }
     ];
@@ -133,102 +479,72 @@
     let chart = null;
     let showDebug = false;
 
-    // --- LOGICA UI ---
     const uiTreatment = document.getElementById('treatment');
-    const uiCycles = document.getElementById('cycles');
-    const uiScenario = document.getElementById('scenario');
-    const uiRate = document.getElementById('rate');
+    const uiCycles    = document.getElementById('cycles');
+    const uiScenario  = document.getElementById('scenario');
+    const uiRate      = document.getElementById('rate');
 
     uiTreatment.addEventListener('change', () => {
-        const type = uiTreatment.value;
-        uiCycles.value = TREATMENTS[type].cycles_default;
+        uiCycles.value = TREATMENTS[uiTreatment.value].cycles_default;
         calcular();
     });
-
     [uiCycles, uiScenario, uiRate].forEach(el => el.addEventListener('input', calcular));
 
     function toggleDebug() { showDebug = !showDebug; calcular(); }
 
-    // --- CÁLCULO ---
     function calcular() {
         const params = TREATMENTS[uiTreatment.value];
-        const H_dot = parseFloat(uiRate.value) || 0;
-        const C = parseFloat(uiCycles.value) || 1;
-        const sc = uiScenario.value;
-        const tau = (sc === "6") ? 18.0 : 0.0;
-        
-        // Info visual
-        document.getElementById('paramDisplay').innerHTML = `
-            <strong>${params.name}:</strong> T<sub>ef,1</sub>=${params.tef1}h, T<sub>ef,2</sub>=${params.tef2}h. 
-            (Límite divido entre ${C} ciclos).
-        `;
+        const H_dot  = parseFloat(uiRate.value) || 0;
+        const C      = parseFloat(uiCycles.value) || 1;
+        const sc     = uiScenario.value;
+        const tau    = (sc === '6') ? 18.0 : 0.0;
 
-        const T1 = params.tef1;
-        const T2 = params.tef2;
+        document.getElementById('paramDisplay').innerHTML =
+            `<strong>${params.name}:</strong> T<sub>ef,1</sub> = ${params.tef1} h, T<sub>ef,2</sub> = ${params.tef2} h &nbsp;·&nbsp; Límite dividido entre ${C} ciclos.`;
+
+        const T1    = params.tef1;
+        const T2    = params.tef2;
         const tbody = document.getElementById('resultsBody');
-        tbody.innerHTML = "";
+        tbody.innerHTML = '';
 
         groups.forEach(g => {
             const RD_c_uSv = (g.lim / C) * 1000.0;
-            let tf = 0;
-            let debugStr = "";
+            let tf = 0, debugStr = '';
 
             try {
                 const term_limit = LN2 * RD_c_uSv;
-
-                if (sc === "24") {
-                    // Ec. 5
+                if (sc === '24') {
                     const num = H_dot * T2 * (g.fn - g.fr);
                     const den = term_limit - (g.fr * H_dot * T2);
                     debugStr = `Ec.5: Num=${Math.round(num)} Den=${Math.round(den)}`;
-
                     if (den <= 0) tf = 999;
-                    else {
-                        const arg = num / den;
-                        tf = (arg <= 0) ? 0 : (T2 / LN2) * Math.log(arg);
-                    }
+                    else { const arg = num / den; tf = (arg <= 0) ? 0 : (T2 / LN2) * Math.log(arg); }
                 } else {
-                    // Ec. 3
-                    const exp_tau = Math.exp(-(LN2 * tau) / T1);
-                    const num = H_dot * T2 * (g.fn - g.fr) * exp_tau;
+                    const exp_tau        = Math.exp(-(LN2 * tau) / T1);
+                    const num            = H_dot * T2 * (g.fn - g.fr) * exp_tau;
                     const eff_time_restr = T1 + (exp_tau * (T2 - T1));
-                    const den = term_limit - (g.fr * H_dot * eff_time_restr);
+                    const den            = term_limit - (g.fr * H_dot * eff_time_restr);
                     debugStr = `Ec.3: Num=${Math.round(num)} Den=${Math.round(den)}`;
-
                     if (den <= 0) tf = 999;
-                    else {
-                        const arg = num / den;
-                        // OJO: arg puede ser muy pequeño y log(arg) muy negativo
-                        // tf = tau + log... puede dar negativo si log es muy fuerte
-                        tf = (arg <= 0) ? 0 : tau + (T2 / LN2) * Math.log(arg);
-                    }
+                    else { const arg = num / den; tf = (arg <= 0) ? 0 : tau + (T2 / LN2) * Math.log(arg); }
                 }
             } catch (e) { tf = 999; }
 
-            // --- CORRECCIÓN FINAL (CLAMPING) ---
-            // Si el resultado es negativo (ej: -1.5h), significa que cumple de sobra
             if (tf < 0) tf = 0;
 
-            // Renderizado
-            const days = (tf > 1440) ? 61 : Math.ceil(tf/24);
+            const days = (tf > 1440) ? 61 : Math.ceil(tf / 24);
             let badgeClass = 'bg-err', badgeText = '> 60 días';
-
-            if (days === 0) { 
-                badgeClass = 'bg-ok'; badgeText = 'Vida Normal'; 
-            } else if (days <= 60) {
-                badgeText = `${days} días`;
-                badgeClass = (days <= 5) ? 'bg-warn' : 'bg-err';
-            }
+            if (days === 0)       { badgeClass = 'bg-ok';   badgeText = 'Vida normal'; }
+            else if (days <= 60)  { badgeText = `${days} días`; badgeClass = (days <= 5) ? 'bg-warn' : 'bg-err'; }
 
             let row = `
                 <tr>
-                    <td><b>${g.name}</b></td>
-                    <td>${g.lim} mSv</td>
-                    <td>${(g.lim/C).toFixed(3)} mSv</td>
+                    <td>${g.name}</td>
+                    <td style="color:var(--text-muted)">${g.lim} mSv</td>
+                    <td style="color:var(--text-muted)">${(g.lim / C).toFixed(3)} mSv</td>
                     <td><span class="badge ${badgeClass}">${badgeText}</span></td>
                 </tr>`;
-            
-            if(showDebug) row += `<tr class="debug-row"><td colspan="4">DEBUG: ${debugStr} | Raw tf=${tf.toFixed(2)}h</td></tr>`;
+            if (showDebug) row += `<tr class="debug-row" style="display:table-row"><td colspan="4" style="padding:6px 16px;font-family:monospace;font-size:12px;color:var(--text-muted)">DEBUG: ${debugStr} | Raw tf = ${tf.toFixed(2)} h</td></tr>`;
             tbody.innerHTML += row;
         });
 
@@ -241,9 +557,9 @@
         const labels = [], data = [];
         const lam1 = LN2 / T1, lam2 = LN2 / T2;
 
-        for(let h=0; h<=168; h+=4) { // 7 días
-            labels.push((h/24).toFixed(1) + "d");
-            let val = (h <= tau) 
+        for (let h = 0; h <= 168; h += 4) {
+            labels.push((h / 24).toFixed(1) + 'd');
+            const val = (h <= tau)
                 ? H0 * Math.exp(-lam1 * h)
                 : (H0 * Math.exp(-lam1 * tau)) * Math.exp(-lam2 * (h - tau));
             data.push(val);
@@ -252,25 +568,42 @@
         chart = new Chart(ctx, {
             type: 'line',
             data: {
-                labels: labels,
+                labels,
                 datasets: [{
-                    label: 'Tasa Estimada (µSv/h)',
-                    data: data,
-                    borderColor: '#2563eb',
-                    backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                    label: 'Tasa estimada (µSv/h)',
+                    data,
+                    borderColor: '#58a6ff',
+                    backgroundColor: 'rgba(88,166,255,0.08)',
                     fill: true,
-                    tension: 0.3, pointRadius: 0
+                    tension: 0.35,
+                    pointRadius: 0,
+                    borderWidth: 2
                 }]
             },
             options: {
-                responsive: true, maintainAspectRatio: false,
-                scales: { y: { beginAtZero: true, title: {display:true, text:'µSv/h'} } }
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: { mode: 'index', intersect: false },
+                plugins: {
+                    legend: { labels: { color: '#8b949e', font: { size: 12 } } }
+                },
+                scales: {
+                    x: {
+                        ticks: { color: '#6e7681', font: { size: 11 } },
+                        grid:  { color: 'rgba(48,54,61,0.7)' }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        title: { display: true, text: 'µSv/h', color: '#6e7681', font: { size: 12 } },
+                        ticks: { color: '#6e7681', font: { size: 11 } },
+                        grid:  { color: 'rgba(48,54,61,0.7)' }
+                    }
+                }
             }
         });
     }
 
-    calcular(); // Init
+    calcular();
 </script>
 </body>
-
 </html>
