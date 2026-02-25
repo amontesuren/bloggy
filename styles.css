@@ -164,7 +164,7 @@ a:hover { text-decoration: underline; }
 }
 
 /* ===== LAYOUT ===== */
-.main-content { margin-left: var(--sidebar-w); }
+.main-content { margin-left: var(--sidebar-w); overflow-x: hidden; }
 
 .page-body {
     margin: 0 auto;
