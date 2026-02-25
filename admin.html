@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin · Falken's Maze</title>
+
+    <!--
+        ANTES DE USAR:
+        1. Activa "Google" en Firebase Console > Authentication > Sign-in method
+        2. Añade tu dominio (o localhost) a la lista de dominios autorizados
+        3. Inicia sesión aquí, copia tu UID desde el botón del topbar
+        4. Pega ese UID en las reglas de Firestore: soyYo() { ... uid == 'TU_UID' }
+    -->
+
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.23.0/firebase-app-compat.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.23.0/firebase-firestore-compat.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.23.0/firebase-auth-compat.min.js"></script>
+
+    <style>
+        /* ===== ADMIN TOPBAR ===== */
+        .admin-topbar {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 0 24px;
+            height: 54px;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .admin-brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+            color: var(--text-primary);
+            font-size: 14px;
+            font-weight: 600;
+        }
+        .admin-brand:hover { color: var(--text-primary); text-decoration: none; }
+        .admin-logo {
+            width: 28px; height: 28px;
+            border-radius: 50%;
+            background: url(logo.png) center / cover;
+            border: 1.5px solid var(--accent-blue);
+            flex-shrink: 0;
+        }
+        .admin-badge {
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            background: rgba(136,192,208,0.12);
+            color: var(--accent-blue);
+            border: 1px solid rgba(136,192,208,0.25);
+            border-radius: 4px;
+            padding: 2px 7px;
+        }
+        .user-chip {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-left: auto;
+        }
+        .user-chip img {
+            width: 28px; height: 28px;
+            border-radius: 50%;
+            border: 1.5px solid var(--border);
+        }
+
+        /* ===== BUTTONS ===== */
+        .btn-google {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            background: #fff;
+            color: #1f1f1f;
+            border: none;
+            border-radius: 8px;
+            padding: 11px 24px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            font-family: 'Inter', sans-serif;
+            transition: box-shadow 0.15s;
+        }
+        .btn-google:hover { box-shadow: 0 2px 16px rgba(0,0,0,0.35); }
+
+        .btn-sm {
+            background: none;
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+            border-radius: 7px;
+            padding: 5px 12px;
+            font-size: 12px;
+            cursor: pointer;
+            font-family: 'Inter', sans-serif;
+            transition: background 0.12s, color 0.12s;
+            white-space: nowrap;
+        }
+        .btn-sm:hover { background: var(--bg-tertiary); color: var(--text-primary); }
+        .btn-sm.copied { color: var(--accent-green); border-color: rgba(163,190,140,0.4); }
+
+        .btn-publish {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--accent-blue);
+            color: var(--bg-primary);
+            border: none;
+            border-radius: 8px;
+            padding: 10px 28px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: 'Inter', sans-serif;
+            transition: opacity 0.15s;
+        }
+        .btn-publish:hover { opacity: 0.85; }
+        .btn-publish:disabled { opacity: 0.4; cursor: not-allowed; }
+
+        /* ===== CENTERED VIEWS ===== */
+        .centered-view {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: calc(100vh - 54px);
+        }
+        .auth-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 48px 56px;
+            text-align: center;
+            max-width: 400px;
+            width: 100%;
+        }
+        .auth-card-icon { font-size: 2.2rem; margin-bottom: 16px; }
+        .auth-card h1 { font-size: 1.2rem; font-weight: 700; margin-bottom: 8px; }
+        .auth-card p { color: var(--text-muted); font-size: 14px; margin-bottom: 32px; }
+
+        /* ===== ADMIN BODY ===== */
+        .admin-body {
+            max-width: 1140px;
+            margin: 0 auto;
+            padding: 36px 28px 80px;
+        }
+
+        .meta-grid {
+            display: grid;
+            grid-template-columns: 2fr 1.2fr 1fr 100px;
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+
+        /* ===== EDITOR SPLIT ===== */
+        .editor-split {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        .editor-pane {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        .editor-pane-header {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 14px;
+            background: var(--bg-tertiary);
+            border-bottom: 1px solid var(--border);
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            color: var(--text-muted);
+            flex-shrink: 0;
+        }
+        .editor-textarea {
+            display: block;
+            width: 100%;
+            flex: 1;
+            min-height: 460px;
+            background: transparent;
+            border: none;
+            color: var(--text-primary);
+            font-family: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
+            font-size: 13.5px;
+            line-height: 1.75;
+            padding: 16px 18px;
+            resize: vertical;
+        }
+        .editor-textarea:focus { outline: none; }
+        .preview-body {
+            flex: 1;
+            min-height: 460px;
+            padding: 16px 20px;
+            overflow-y: auto;
+            color: var(--text-secondary);
+            font-size: 15px;
+            line-height: 1.85;
+        }
+
+        /* ── Preview markdown ── */
+        .preview-body h1, .preview-body h2,
+        .preview-body h3, .preview-body h4 {
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-top: 1.6em;
+            margin-bottom: 0.5em;
+        }
+        .preview-body h2 { font-size: 1.2rem; color: var(--accent-blue); }
+        .preview-body h3 { font-size: 1.05rem; }
+        .preview-body p  { margin-bottom: 0.9em; }
+        .preview-body strong { color: var(--text-primary); }
+        .preview-body code {
+            background: var(--bg-tertiary);
+            color: var(--accent-orange);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.87em;
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .preview-body pre {
+            background: var(--bg-primary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 12px 16px;
+            overflow-x: auto;
+            margin: 0.8em 0;
+        }
+        .preview-body pre code { background: none; padding: 0; }
+        .preview-body ul, .preview-body ol { padding-left: 1.5em; margin-bottom: 0.8em; }
+        .preview-body li { margin-bottom: 0.2em; }
+        .preview-body blockquote {
+            border-left: 3px solid var(--accent-blue);
+            padding: 2px 0 2px 16px;
+            color: var(--text-muted);
+            font-style: italic;
+            margin: 0.8em 0;
+        }
+        .preview-body table { width: 100%; border-collapse: collapse; margin: 0.8em 0; font-size: 14px; }
+        .preview-body th { background: var(--bg-tertiary); padding: 8px 12px; text-align: left; border-bottom: 1px solid var(--border); }
+        .preview-body td { padding: 8px 12px; border-bottom: 1px solid var(--border-sub); }
+
+        /* ===== STATUS ===== */
+        .status-msg {
+            font-size: 13px;
+            padding: 8px 16px;
+            border-radius: 8px;
+        }
+        .status-ok   { background: rgba(163,190,140,0.15); color: var(--accent-green); }
+        .status-err  { background: rgba(191,97,106,0.15);  color: var(--accent-red); }
+        .status-info { color: var(--text-muted); }
+
+        .slug-hint { font-size: 11px; color: var(--text-muted); margin-top: 4px; min-height: 16px; }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 900px) {
+            .meta-grid    { grid-template-columns: 1fr 1fr; }
+            .editor-split { grid-template-columns: 1fr; }
+        }
+        @media (max-width: 576px) {
+            .meta-grid  { grid-template-columns: 1fr; }
+            .admin-body { padding: 20px 14px 60px; }
+            .auth-card  { padding: 32px 20px; }
+            .admin-topbar { padding: 0 16px; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- ═══ TOPBAR ═══════════════════════════════════════════════════════════ -->
+<header class="admin-topbar">
+    <a href="index.html" class="admin-brand">
+        <div class="admin-logo"></div>
+        Falken's Maze
+    </a>
+    <span class="admin-badge">Admin</span>
+    <div id="header-auth" style="margin-left:auto;"></div>
+</header>
+
+<!-- ═══ LOGIN VIEW ════════════════════════════════════════════════════════ -->
+<div id="login-view">
+    <div class="centered-view">
+        <div class="auth-card">
+            <div class="auth-card-icon">✏️</div>
+            <h1>Área de administración</h1>
+            <p>Inicia sesión con tu cuenta de Google para crear entradas del blog.</p>
+            <button id="btn-login" class="btn-google">
+                <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
+                    <path fill="#4285F4" d="M44.5 20H24v8.5h11.8C34.7 33.9 30.1 37 24 37c-7.2 0-13-5.8-13-13s5.8-13 13-13c3.1 0 5.9 1.1 8.1 2.9l6.4-6.4C34.6 4.1 29.6 2 24 2 11.8 2 2 11.8 2 24s9.8 22 22 22c11 0 21-8 21-22 0-1.3-.2-2.7-.5-4z"/>
+                    <path fill="#34A853" d="M6.3 14.7l7 5.1C15.1 16 19.3 13 24 13c3.1 0 5.9 1.1 8.1 2.9l6.4-6.4C34.6 4.1 29.6 2 24 2c-7.6 0-14.2 4.3-17.7 10.7z"/>
+                    <path fill="#FBBC05" d="M24 46c5.9 0 10.9-2 14.5-5.4l-6.7-5.5C29.8 36.7 27 38 24 38c-6 0-11.1-4-12.9-9.5l-7 5.4C7.7 41.6 15.3 46 24 46z"/>
+                    <path fill="#EA4335" d="M44.5 20H24v8.5h11.8c-.8 2.7-2.6 5-5 6.6l6.7 5.5C41.7 37.1 45 31 45 24c0-1.3-.2-2.7-.5-4z"/>
+                </svg>
+                Continuar con Google
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- ═══ ADMIN VIEW ════════════════════════════════════════════════════════ -->
+<div id="admin-view" style="display:none;">
+    <div class="admin-body">
+
+        <div style="margin-bottom:28px;">
+            <h1 style="font-size:1.35rem;font-weight:700;margin-bottom:4px;">Nueva entrada del blog</h1>
+            <p style="color:var(--text-muted);font-size:13px;">
+                Escribe en Markdown con vista previa en tiempo real.
+                Los cambios no se guardan hasta que pulses <strong style="color:var(--text-secondary)">Publicar</strong>.
+            </p>
+        </div>
+
+        <!-- Meta -->
+        <div class="meta-grid">
+            <div>
+                <label class="field-label">Título</label>
+                <input type="text" id="f-titulo" class="dark-input" placeholder="El título del post…">
+            </div>
+            <div>
+                <label class="field-label">Slug <span style="font-weight:400;text-transform:none;letter-spacing:0">(ID en Firestore)</span></label>
+                <input type="text" id="f-slug" class="dark-input" placeholder="mi-primer-post">
+                <div class="slug-hint" id="slug-hint"></div>
+            </div>
+            <div>
+                <label class="field-label">Topic</label>
+                <input type="text" id="f-topic" class="dark-input" placeholder="ej. Lu-177">
+            </div>
+            <div>
+                <label class="field-label">Min. lectura</label>
+                <input type="number" id="f-minutos" class="dark-input" value="5" min="1" max="120">
+            </div>
+        </div>
+
+        <!-- Editor + Preview -->
+        <div class="editor-split">
+            <div class="editor-pane">
+                <div class="editor-pane-header">
+                    <i class="bi bi-code-slash"></i> Markdown
+                </div>
+                <textarea id="f-contenido" class="editor-textarea"
+                    placeholder="# Título&#10;&#10;Escribe aquí en **Markdown**…&#10;&#10;Soporta tablas, código, fórmulas LaTeX ($E=mc^2$), etc."></textarea>
+            </div>
+            <div class="editor-pane">
+                <div class="editor-pane-header">
+                    <i class="bi bi-eye"></i> Vista previa
+                </div>
+                <div id="preview-body" class="preview-body">
+                    <p style="color:var(--text-muted);font-style:italic;font-size:14px;">La vista previa aparece aquí mientras escribes…</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Actions -->
+        <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+            <button id="btn-publish" class="btn-publish">
+                <i class="bi bi-send-fill"></i> Publicar
+            </button>
+            <div id="status-msg" style="display:none;" class="status-msg"></div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+(function () {
+    const p = [
+        'eyJhcGlLZXkiOiAi',
+        'QWl6YVN5Q1VOY2QxcEVSXzhJdm1abFlYMWF5S2V3RHdQckFwOUZBIiwg',
+        'ImF1dGhEb21haW4iOiAiZmFsa2VuLXMtbWF6ZS5maXJlYmFzZWFwcC5jb20iLCAicHJvamVjdElkIjogImZhbGtlbi1zLW1hemUiLCAic3RvcmFnZUJ1Y2tldCI6ICItZmFsa2VuLXMtbWF6ZS5maXJlYmFzZXN0b3JhZ2UuYXBwIiwg',
+        'Im1lc3NhZ2luZ1NlbmRlcklkIjogIjE3NDk4ODk4OTI1NCIsICJhcHBJZCI6ICIxOjE3NDk4ODk4OTI1NDp3ZWI6NTJhZTkwODRiNTBhMjYzODk4MGI0NyJ9'
+    ];
+    firebase.initializeApp(JSON.parse(atob(p.join(''))));
+})();
+
+const auth = firebase.auth();
+const db   = firebase.firestore();
+
+const googleProvider = new firebase.auth.GoogleAuthProvider();
+googleProvider.setCustomParameters({ prompt: 'select_account' });
+
+// ─── Auth ──────────────────────────────────────────────────────────────
+
+document.getElementById('btn-login').addEventListener('click', () => {
+    auth.signInWithPopup(googleProvider).catch(err => console.error('Login error:', err));
+});
+
+auth.onAuthStateChanged(user => {
+    if (user) {
+        document.getElementById('login-view').style.display = 'none';
+        document.getElementById('admin-view').style.display = '';
+        renderUserChip(user);
+    } else {
+        document.getElementById('login-view').style.display = '';
+        document.getElementById('admin-view').style.display = 'none';
+        document.getElementById('header-auth').innerHTML = '';
+    }
+});
+
+function renderUserChip(user) {
+    const el = document.getElementById('header-auth');
+    const uidShort = user.uid.slice(0, 10) + '…';
+    el.innerHTML = `
+        <div class="user-chip">
+            ${user.photoURL ? `<img src="${user.photoURL}" alt="">` : ''}
+            <span style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+                ${user.displayName || user.email}
+            </span>
+            <button id="btn-copy-uid" class="btn-sm" title="Tu UID para las reglas de Firestore">
+                <i class="bi bi-key"></i> ${uidShort}
+            </button>
+            <button id="btn-logout" class="btn-sm">Salir</button>
+        </div>`;
+
+    document.getElementById('btn-logout').addEventListener('click', () => auth.signOut());
+
+    const copyBtn = document.getElementById('btn-copy-uid');
+    copyBtn.addEventListener('click', () => {
+        navigator.clipboard.writeText(user.uid).then(() => {
+            copyBtn.innerHTML = '<i class="bi bi-check-lg"></i> UID copiado';
+            copyBtn.classList.add('copied');
+            setTimeout(() => {
+                copyBtn.innerHTML = `<i class="bi bi-key"></i> ${uidShort}`;
+                copyBtn.classList.remove('copied');
+            }, 2500);
+        });
+    });
+}
+
+// ─── Slug auto-gen ────────────────────────────────────────────────────
+
+function slugify(str) {
+    return str
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase().trim()
+        .replace(/[^a-z0-9\s-]/g, '')
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-')
+        .slice(0, 80);
+}
+
+let slugEdited = false;
+const tituloEl = document.getElementById('f-titulo');
+const slugEl   = document.getElementById('f-slug');
+const slugHint = document.getElementById('slug-hint');
+
+tituloEl.addEventListener('input', () => {
+    if (!slugEdited) {
+        const s = slugify(tituloEl.value);
+        slugEl.value = s;
+        slugHint.textContent = s ? `doc ID: "${s}"` : '';
+    }
+});
+slugEl.addEventListener('input', () => {
+    slugEdited = !!slugEl.value;
+    slugHint.textContent = slugEl.value ? `doc ID: "${slugEl.value}"` : '';
+});
+
+// ─── Live preview ──────────────────────────────────────────────────────
+
+const contenidoEl = document.getElementById('f-contenido');
+const previewEl   = document.getElementById('preview-body');
+const EMPTY_PREVIEW = '<p style="color:var(--text-muted);font-style:italic;font-size:14px;">La vista previa aparece aquí mientras escribes…</p>';
+
+contenidoEl.addEventListener('input', () => {
+    previewEl.innerHTML = contenidoEl.value ? marked.parse(contenidoEl.value) : EMPTY_PREVIEW;
+});
+
+// ─── Publish ───────────────────────────────────────────────────────────
+
+function showStatus(msg, type) {
+    const el = document.getElementById('status-msg');
+    el.textContent = msg;
+    el.className = 'status-msg status-' + type;
+    el.style.display = '';
+    if (type === 'ok') setTimeout(() => { el.style.display = 'none'; }, 5000);
+}
+
+document.getElementById('btn-publish').addEventListener('click', async () => {
+    const titulo    = tituloEl.value.trim();
+    const slug      = slugEl.value.trim();
+    const topic     = document.getElementById('f-topic').value.trim() || 'General';
+    const minutos   = Math.max(1, parseInt(document.getElementById('f-minutos').value) || 5);
+    const contenido = contenidoEl.value.trim();
+
+    if (!titulo)    { showStatus('El título es obligatorio.', 'err'); return; }
+    if (!slug)      { showStatus('El slug (ID del documento) es obligatorio.', 'err'); return; }
+    if (!contenido) { showStatus('El contenido no puede estar vacío.', 'err'); return; }
+
+    const btn = document.getElementById('btn-publish');
+    btn.disabled = true;
+    showStatus('Verificando…', 'info');
+
+    try {
+        // Evitar sobrescribir un post existente
+        const existing = await db.collection('BLOG').doc(slug).get();
+        if (existing.exists) {
+            showStatus(`Ya existe un post con el slug "${slug}". Elige otro ID.`, 'err');
+            btn.disabled = false;
+            return;
+        }
+
+        showStatus('Publicando…', 'info');
+        const ts = firebase.firestore.FieldValue.serverTimestamp();
+        await db.collection('BLOG').doc(slug).set({
+            titulo,
+            contenido,
+            topic,
+            minutos,
+            fecha:         ts,   // usado por el blog para mostrar y ordenar
+            fechaCreacion: ts,   // requerido por las reglas de Firestore
+        });
+
+        showStatus('✓ Post publicado correctamente.', 'ok');
+
+        // Limpiar formulario
+        tituloEl.value = '';
+        slugEl.value   = '';
+        document.getElementById('f-topic').value   = '';
+        document.getElementById('f-minutos').value = 5;
+        contenidoEl.value = '';
+        previewEl.innerHTML = EMPTY_PREVIEW;
+        slugEdited = false;
+        slugHint.textContent = '';
+
+    } catch (err) {
+        console.error('Publish error:', err);
+        if (err.code === 'permission-denied') {
+            showStatus('Permiso denegado. ¿Has puesto tu UID en las reglas de Firestore?', 'err');
+        } else {
+            showStatus('Error: ' + err.message, 'err');
+        }
+    } finally {
+        btn.disabled = false;
+    }
+});
+</script>
+</body>
+</html>
