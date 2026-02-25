@@ -37,6 +37,7 @@
             '<span class="s-name">Falken\'s Maze<span class="cursor">_</span></span>' +
         '</a>' +
         '<nav class="sidebar-nav">' + navHTML + '</nav>' +
+        '<div id="sidebar-topics"></div>' +
         '<div class="sidebar-footer">F\u00edsica M\u00e9dica &amp; Medicina Nuclear</div>';
 
     var topbar = document.createElement('header');
@@ -62,6 +63,7 @@
         '</div>' +
         '<div class="offcanvas-body p-0">' +
             '<nav class="sidebar-nav">' + navHTML + '</nav>' +
+            '<div id="offcanvas-topics"></div>' +
         '</div>';
 
     document.body.prepend(sidebar, topbar, offcanvas);

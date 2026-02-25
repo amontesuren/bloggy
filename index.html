@@ -293,6 +293,35 @@ function renderPost(data, container) {
     if (window.MathJax?.typesetPromise) MathJax.typesetPromise([div]);
 }
 
+async function loadTopics() {
+    const snap = await db.collection('BLOG').get();
+    const topics = new Set();
+    snap.forEach(doc => { const t = doc.data().topic; if (t) topics.add(t); });
+    if (topics.size === 0) return;
+
+    const sorted = [...topics].sort();
+    const isTodos = !currentTopic;
+
+    function buildHTML() {
+        let h = '<div class="nav-section">' +
+            '<span class="nav-section-label">Temas</span>' +
+            '<a href="index.html" class="nav-link-item' + (isTodos ? ' active' : '') + '">' +
+            '<i class="bi bi-grid-3x3-gap"></i> Todos</a>';
+        sorted.forEach(t => {
+            const active = currentTopic === t ? ' active' : '';
+            h += '<a href="?t=' + encodeURIComponent(t) + '" class="nav-link-item' + active + '">' +
+                '<i class="bi bi-tag"></i> ' + t + '</a>';
+        });
+        return h + '</div>';
+    }
+
+    const html = buildHTML();
+    const sd = document.getElementById('sidebar-topics');
+    const od = document.getElementById('offcanvas-topics');
+    if (sd) sd.innerHTML = html;
+    if (od) od.innerHTML = html;
+}
+
 function setupObserver() {
     const trigger = document.getElementById('scroll-trigger');
     if (!trigger) return;
@@ -304,6 +333,7 @@ function setupObserver() {
 document.addEventListener('DOMContentLoaded', () => {
     const { topic, slug } = getQueryParams();
     currentTopic = topic;
+    loadTopics();
     if (slug) loadPostBySlug(slug);
     else if (topic) loadPostsByTopic(topic);
     else { loadMorePosts(); setupObserver(); }
