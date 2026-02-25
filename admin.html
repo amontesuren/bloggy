@@ -497,7 +497,7 @@ function showStatus(msg, type) {
 document.getElementById('btn-publish').addEventListener('click', async () => {
     const titulo    = tituloEl.value.trim();
     const slug      = slugEl.value.trim();
-    const topic     = document.getElementById('f-topic').value.trim() || 'General';
+    const topic     = document.getElementById('f-topic').value.trim() || 'GENERAL';
     const minutos   = Math.max(1, parseInt(document.getElementById('f-minutos').value) || 5);
     const contenido = contenidoEl.value.trim();
 
