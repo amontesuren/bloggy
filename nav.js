@@ -9,7 +9,8 @@
         { href: 'index.html',            icon: 'bi-house-door',       label: 'Inicio',               section: 'Blog' },
         { href: 'convertUnits.html',     icon: 'bi-arrow-left-right', label: 'Conversor Ci\u2013Bq', section: 'Aplicaciones' },
         { href: 'decayCalculator.html',  icon: 'bi-clock-history',    label: 'Decay Calculator',     section: 'Aplicaciones' },
-        { href: 'RestricionesLu177.html',icon: 'bi-activity',         label: 'Lu-177 Restricciones', section: 'Aplicaciones' }
+        { href: 'RestricionesLu177.html',  icon: 'bi-activity',         label: 'Lu-177 Restricciones',  section: 'Aplicaciones' },
+        { href: 'uniformidadGamma.html',   icon: 'bi-grid-1x2-fill',    label: 'Uniformidad NEMA',       section: 'Aplicaciones' }
     ];
 
     function buildNavHTML() {
