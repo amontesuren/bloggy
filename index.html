@@ -232,9 +232,11 @@ function fixDriveUrl(url) {
 /* Renderer de marked con soporte Drive */
 (function () {
     const r = new marked.Renderer();
-    r.image = function (href, title, text) {
-        const src = fixDriveUrl(href);
-        return `<img src="${src}" alt="${text}"${title ? ` title="${title}"` : ''} style="max-width:100%;height:auto;border-radius:8px;margin:0.5em 0;">`;
+    r.image = function (token) {
+        const src = fixDriveUrl(token.href || '');
+        const alt = token.text || '';
+        const t = token.title;
+        return `<img src="${src}" alt="${alt}"${t ? ` title="${t}"` : ''} style="max-width:100%;height:auto;border-radius:8px;margin:0.5em 0;">`;
     };
     marked.setOptions({ renderer: r });
 })();
