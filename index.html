@@ -220,6 +220,25 @@ const PAGE_SIZE = 5;
 let loading = false;
 let currentTopic = null;
 
+/* Convierte URLs de Drive compartir → URL directa de imagen */
+function fixDriveUrl(url) {
+    if (!url) return url;
+    let m = url.match(/drive\.google\.com\/file\/d\/([A-Za-z0-9_-]+)/);
+    if (m) return `https://drive.google.com/uc?export=view&id=${m[1]}`;
+    m = url.match(/drive\.google\.com\/open\?.*?id=([A-Za-z0-9_-]+)/);
+    if (m) return `https://drive.google.com/uc?export=view&id=${m[1]}`;
+    return url;
+}
+/* Renderer de marked con soporte Drive */
+(function () {
+    const r = new marked.Renderer();
+    r.image = function (href, title, text) {
+        const src = fixDriveUrl(href);
+        return `<img src="${src}" alt="${text}"${title ? ` title="${title}"` : ''} style="max-width:100%;height:auto;border-radius:8px;margin:0.5em 0;">`;
+    };
+    marked.setOptions({ renderer: r });
+})();
+
 function getQueryParams() {
     const p = new URLSearchParams(window.location.search);
     return { topic: p.get('t'), slug: p.get('slug') };
