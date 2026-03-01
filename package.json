@@ -1,0 +1,24 @@
+{
+  "name": "falkens-maze",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.22.0",
+    "firebase": "^10.8.0",
+    "marked": "^12.0.0",
+    "highlight.js": "^11.9.0",
+    "chart.js": "^4.4.1",
+    "dicom-parser": "^1.8.21"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.4",
+    "vite": "^6.0.3"
+  }
+}
