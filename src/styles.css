@@ -64,7 +64,7 @@ a:hover { text-decoration: underline; }
 .s-avatar {
     width: 34px; height: 34px;
     border-radius: 50%;
-    background: url(logo.png) center / cover;
+    background: url(/logo.png) center / cover;
     border: 2px solid var(--accent-blue);
     flex-shrink: 0;
 }
@@ -135,7 +135,7 @@ a:hover { text-decoration: underline; }
 .topbar-logo {
     width: 28px; height: 28px;
     border-radius: 50%;
-    background: url(logo.png) center / cover;
+    background: url(/logo.png) center / cover;
     border: 1.5px solid var(--accent-blue);
     flex-shrink: 0;
 }
