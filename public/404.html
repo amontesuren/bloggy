@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Redirecting...</title>
+    <script>
+      // Redirect to HTTPS version
+      if (location.protocol !== 'https:') {
+        location.replace('https://' + location.host + location.pathname + location.search + location.hash);
+      } else {
+        // If already HTTPS, redirect to home
+        location.replace('/');
+      }
+    </script>
+</head>
+<body>
+    <p>Redirecting to secure connection...</p>
+</body>
+</html>
