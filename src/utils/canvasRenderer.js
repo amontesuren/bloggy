@@ -7,9 +7,18 @@ function hotColor(t) {
 }
 
 export function renderCanvas(canvas, data, mask, rows, cols) {
+  if (!canvas) {
+    console.error('Canvas element is null or undefined')
+    return
+  }
+  
   canvas.width = cols
   canvas.height = rows
   const ctx = canvas.getContext('2d')
+  if (!ctx) {
+    console.error('Could not get 2d context from canvas')
+    return
+  }
   const img = ctx.createImageData(cols, rows)
 
   let mn = Infinity, mx = -Infinity

@@ -8,7 +8,8 @@ const links = [
   { href: '/convert-units', icon: 'bi-arrow-left-right', label: 'Conversor Ci–Bq', section: 'Aplicaciones' },
   { href: '/decay-calculator', icon: 'bi-clock-history', label: 'Decay Calculator', section: 'Aplicaciones' },
   { href: '/restricciones-lu177', icon: 'bi-activity', label: 'Lu-177 Restricciones', section: 'Aplicaciones' },
-  { href: '/uniformidad-gamma', icon: 'bi-grid-1x2-fill', label: 'Uniformidad NEMA', section: 'Aplicaciones' }
+  { href: '/uniformidad-gamma', icon: 'bi-grid-1x2-fill', label: 'Uniformidad NEMA', section: 'Aplicaciones' },
+  { href: '/quizzes', icon: 'bi-trophy', label: 'Quizzes', section: 'Juegos' }
 ]
 
 function Topbar() {
@@ -35,7 +36,7 @@ function Topbar() {
     }
   }
 
-  const sections = ['Blog', 'Aplicaciones']
+  const sections = ['Blog', 'Aplicaciones', 'Juegos']
 
   return (
     <>

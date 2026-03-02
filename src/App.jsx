@@ -6,6 +6,9 @@ import DecayCalculator from './pages/DecayCalculator'
 import RestricionesLu177 from './pages/RestricionesLu177'
 import UniformidadGamma from './pages/UniformidadGamma'
 import Admin from './pages/Admin'
+import QuizCreator from './pages/QuizCreator'
+import QuizList from './pages/QuizList'
+import QuizPlay from './pages/QuizPlay'
 
 function App() {
   return (
@@ -18,6 +21,9 @@ function App() {
         <Route path="uniformidad-gamma" element={<UniformidadGamma />} />
       </Route>
       <Route path="/admin" element={<Admin />} />
+      <Route path="/quiz-creator" element={<QuizCreator />} />
+      <Route path="/quizzes" element={<QuizList />} />
+      <Route path="/quiz/:quizId" element={<QuizPlay />} />
     </Routes>
   )
 }

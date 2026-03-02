@@ -57,10 +57,16 @@ function UniformidadGamma() {
         const rawData = parsedDICOM.frames[frame]
         const res = calculateNEMA(rawData, parsedDICOM.rows, parsedDICOM.cols, targetSize)
 
-        // Render images
-        renderCanvas(canvasOrigRef.current, rawData, null, parsedDICOM.rows, parsedDICOM.cols)
-        renderCanvas(canvasUFOVRef.current, res.data, res.ufovMask, res.rows, res.cols)
-        renderCanvas(canvasCFOVRef.current, res.data, res.cfovMask, res.rows, res.cols)
+        // Render images - check refs exist
+        if (canvasOrigRef.current) {
+          renderCanvas(canvasOrigRef.current, rawData, null, parsedDICOM.rows, parsedDICOM.cols)
+        }
+        if (canvasUFOVRef.current) {
+          renderCanvas(canvasUFOVRef.current, res.data, res.ufovMask, res.rows, res.cols)
+        }
+        if (canvasCFOVRef.current) {
+          renderCanvas(canvasCFOVRef.current, res.data, res.cfovMask, res.rows, res.cols)
+        }
 
         setResults(res)
         setStatus(`Cálculo completado · ${res.rows} × ${res.cols} px tras remuestreo.`)
