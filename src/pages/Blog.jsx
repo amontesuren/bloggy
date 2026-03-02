@@ -7,15 +7,34 @@ import hljs from 'highlight.js'
 
 const PAGE_SIZE = 5
 
-// Convierte URLs de Drive compartir → URL directa de imagen (código original)
+// Convierte URLs de Drive compartir → URL directa de imagen
 function fixDriveUrl(url) {
   if (!url) return url
+  
+  // Extraer ID de diferentes formatos de URL de Google Drive
+  let fileId = null
+  
+  // Formato: https://drive.google.com/file/d/ID/view
   let m = url.match(/drive\.google\.com\/file\/d\/([A-Za-z0-9_-]+)/)
-  if (m) return `https://drive.google.com/thumbnail?id=${m[1]}&sz=w1000`
-  m = url.match(/drive\.google\.com\/open\?.*?id=([A-Za-z0-9_-]+)/)
-  if (m) return `https://drive.google.com/thumbnail?id=${m[1]}&sz=w1000`
-  m = url.match(/drive\.google\.com\/uc\?.*?id=([A-Za-z0-9_-]+)/)
-  if (m) return `https://drive.google.com/thumbnail?id=${m[1]}&sz=w1000`
+  if (m) fileId = m[1]
+  
+  // Formato: https://drive.google.com/open?id=ID
+  if (!fileId) {
+    m = url.match(/drive\.google\.com\/open\?.*?id=([A-Za-z0-9_-]+)/)
+    if (m) fileId = m[1]
+  }
+  
+  // Formato: https://drive.google.com/uc?id=ID
+  if (!fileId) {
+    m = url.match(/drive\.google\.com\/uc\?.*?id=([A-Za-z0-9_-]+)/)
+    if (m) fileId = m[1]
+  }
+  
+  // Si encontramos un ID, usar el formato que funcionaba
+  if (fileId) {
+    return `https://lh3.googleusercontent.com/d/${fileId}`
+  }
+  
   return url
 }
 
