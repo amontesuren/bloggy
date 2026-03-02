@@ -19,6 +19,23 @@ function UniformidadGamma() {
   const canvasUFOVRef = useRef()
   const canvasCFOVRef = useRef()
 
+  // Render canvases when results change
+  useEffect(() => {
+    if (results && parsedDICOM) {
+      const rawData = parsedDICOM.frames[frame]
+      
+      if (canvasOrigRef.current) {
+        renderCanvas(canvasOrigRef.current, rawData, null, parsedDICOM.rows, parsedDICOM.cols)
+      }
+      if (canvasUFOVRef.current) {
+        renderCanvas(canvasUFOVRef.current, results.data, results.ufovMask, results.rows, results.cols)
+      }
+      if (canvasCFOVRef.current) {
+        renderCanvas(canvasCFOVRef.current, results.data, results.cfovMask, results.rows, results.cols)
+      }
+    }
+  }, [results, parsedDICOM, frame])
+
   const handleFileSelect = (file) => {
     if (!file) return
     setStatus('Leyendo archivo DICOM…')
@@ -56,17 +73,6 @@ function UniformidadGamma() {
       try {
         const rawData = parsedDICOM.frames[frame]
         const res = calculateNEMA(rawData, parsedDICOM.rows, parsedDICOM.cols, targetSize)
-
-        // Render images - check refs exist
-        if (canvasOrigRef.current) {
-          renderCanvas(canvasOrigRef.current, rawData, null, parsedDICOM.rows, parsedDICOM.cols)
-        }
-        if (canvasUFOVRef.current) {
-          renderCanvas(canvasUFOVRef.current, res.data, res.ufovMask, res.rows, res.cols)
-        }
-        if (canvasCFOVRef.current) {
-          renderCanvas(canvasCFOVRef.current, res.data, res.cfovMask, res.rows, res.cols)
-        }
 
         setResults(res)
         setStatus(`Cálculo completado · ${res.rows} × ${res.cols} px tras remuestreo.`)
