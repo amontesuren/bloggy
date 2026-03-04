@@ -1,15 +1,26 @@
-// Parser básico para DICOM RT Plan
+// Parser VERBOSE para debugging de DICOM RT Plan
 export function parseRTPlan(arrayBuffer) {
+  console.log('=== INICIO PARSING RT PLAN ===')
+  console.log('Tamaño del archivo:', arrayBuffer.byteLength, 'bytes')
+  
   const view = new DataView(arrayBuffer)
   const decoder = new TextDecoder('iso-8859-1')
   
-  let offset = 128 // Skip preamble
+  // Verificar preamble (primeros 128 bytes)
+  console.log('Verificando preamble (primeros 128 bytes)...')
+  let offset = 128
   
   // Verificar DICM
-  const dicm = decoder.decode(new Uint8Array(arrayBuffer, offset, 4))
+  const dicmBytes = new Uint8Array(arrayBuffer, offset, 4)
+  const dicm = decoder.decode(dicmBytes)
+  console.log('Bytes DICM:', Array.from(dicmBytes).map(b => b.toString(16).padStart(2, '0')).join(' '))
+  console.log('Firma DICM:', dicm)
+  
   if (dicm !== 'DICM') {
-    throw new Error('No es un archivo DICOM válido')
+    console.error('❌ No es un archivo DICOM válido (falta firma DICM)')
+    throw new Error('No es un archivo DICOM válido (falta firma DICM)')
   }
+  console.log('✓ Firma DICM válida')
   offset += 4
 
   const plan = {
@@ -32,193 +43,325 @@ export function parseRTPlan(arrayBuffer) {
 
   let currentBeam = null
   let currentControlPoint = null
-  let inBeamSequence = false
-  let inControlPointSequence = false
+  let tagsFound = 0
+  let tagsProcessed = 0
+  const maxTagsToLog = 50 // Limitar logs para no saturar
+
+  console.log('\n=== COMENZANDO LECTURA DE TAGS ===\n')
 
   try {
     while (offset < arrayBuffer.byteLength - 8) {
-      const group = view.getUint16(offset, true).toString(16).padStart(4, '0')
-      const element = view.getUint16(offset + 2, true).toString(16).padStart(4, '0')
-      const tag = (group + element).toUpperCase()
+      if (offset + 8 > arrayBuffer.byteLength) {
+        console.log('⚠️ Llegamos al final del archivo')
+        break
+      }
+      
+      const group = view.getUint16(offset, true)
+      const element = view.getUint16(offset + 2, true)
+      const tag = group.toString(16).padStart(4, '0').toUpperCase() + 
+                  element.toString(16).padStart(4, '0').toUpperCase()
+      
+      tagsProcessed++
+      
+      // Log detallado solo para los primeros tags o tags importantes
+      const isImportantTag = tag.startsWith('300A') || tag.startsWith('0010')
+      const shouldLog = tagsProcessed <= maxTagsToLog || isImportantTag
+      
+      if (shouldLog) {
+        console.log(`\n--- Tag #${tagsProcessed}: ${tag} (offset: ${offset}) ---`)
+      }
       
       let vr = ''
       let length = 0
+      let valueOffset = offset + 8
       
-      // Leer VR y longitud
-      if (group !== '0002' && parseInt(group, 16) % 2 === 1) {
-        // Implicit VR
-        length = view.getUint32(offset + 4, true)
-        offset += 8
-      } else {
-        // Explicit VR
-        vr = decoder.decode(new Uint8Array(arrayBuffer, offset + 4, 2))
+      // Leer posible VR
+      const possibleVRBytes = new Uint8Array(arrayBuffer, offset + 4, 2)
+      const possibleVR = decoder.decode(possibleVRBytes)
+      const isExplicitVR = /^[A-Z]{2}$/.test(possibleVR)
+      
+      if (shouldLog) {
+        console.log('  Posible VR:', possibleVR, '(bytes:', 
+          Array.from(possibleVRBytes).map(b => b.toString(16).padStart(2, '0')).join(' ') + ')')
+        console.log('  Es Explicit VR:', isExplicitVR)
+      }
+      
+      if (isExplicitVR) {
+        vr = possibleVR
         
-        if (['OB', 'OW', 'OF', 'SQ', 'UN', 'UT'].includes(vr)) {
-          offset += 2 // Skip reserved
-          length = view.getUint32(offset + 6, true)
-          offset += 10
+        // VRs con longitud de 32 bits
+        if (['OB', 'OD', 'OF', 'OL', 'OW', 'SQ', 'UC', 'UN', 'UR', 'UT'].includes(vr)) {
+          length = view.getUint32(offset + 8, true)
+          valueOffset = offset + 12
+          if (shouldLog) console.log('  VR largo (32-bit length):', vr, 'length:', length)
         } else {
           length = view.getUint16(offset + 6, true)
-          offset += 8
+          valueOffset = offset + 8
+          if (shouldLog) console.log('  VR corto (16-bit length):', vr, 'length:', length)
         }
+      } else {
+        // Implicit VR
+        length = view.getUint32(offset + 4, true)
+        valueOffset = offset + 8
+        if (shouldLog) console.log('  Implicit VR, length:', length)
       }
 
+      // Manejar secuencias (undefined length)
       if (length === 0xFFFFFFFF) {
-        // Sequence start
-        if (tag === '300A00B0') inBeamSequence = true
-        if (tag === '300A0111') inControlPointSequence = true
-        offset += 0
+        if (shouldLog) console.log('  ⚠️ Secuencia con longitud indefinida, saltando...')
+        offset = valueOffset
         continue
       }
 
-      // Leer valor según el tag
-      if (tag === '00100010') { // Patient Name
-        plan.patientName = decoder.decode(new Uint8Array(arrayBuffer, offset, Math.min(length, 100))).trim()
-      } else if (tag === '00100020') { // Patient ID
-        plan.patientID = decoder.decode(new Uint8Array(arrayBuffer, offset, Math.min(length, 100))).trim()
-      } else if (tag === '300A0002') { // RT Plan Label
-        plan.planLabel = decoder.decode(new Uint8Array(arrayBuffer, offset, Math.min(length, 100))).trim()
-      } else if (tag === '300A0003') { // RT Plan Name
-        if (!plan.planLabel) {
-          plan.planLabel = decoder.decode(new Uint8Array(arrayBuffer, offset, Math.min(length, 100))).trim()
-        }
-      } else if (tag === '300A0004') { // RT Plan Description
-        plan.planDescription = decoder.decode(new Uint8Array(arrayBuffer, offset, Math.min(length, 200))).trim()
-      } else if (tag === '300A0006') { // RT Plan Date
-        plan.planDate = decoder.decode(new Uint8Array(arrayBuffer, offset, Math.min(length, 100))).trim()
-      } else if (tag === '300A0007') { // RT Plan Time
-        plan.planTime = decoder.decode(new Uint8Array(arrayBuffer, offset, Math.min(length, 100))).trim()
-      } else if (tag === '300A0009') { // Treatment Sites
-        plan.treatmentSites = decoder.decode(new Uint8Array(arrayBuffer, offset, Math.min(length, 100))).trim()
-      } else if (tag === '300A000A') { // RT Plan Intent
-        plan.planIntent = decoder.decode(new Uint8Array(arrayBuffer, offset, Math.min(length, 100))).trim()
-      } else if (tag === '300A0070') { // Number of Fractions
-        const val = decoder.decode(new Uint8Array(arrayBuffer, offset, Math.min(length, 20))).trim()
-        plan.numberOfFractions = parseInt(val) || 0
-      } else if (tag === '300A0026') { // Target Prescription Dose
-        const val = decoder.decode(new Uint8Array(arrayBuffer, offset, Math.min(length, 20))).trim()
-        plan.prescribedDose = parseFloat(val) || 0
-      } else if (tag === '300A0080') { // Number of Beams
-        const val = decoder.decode(new Uint8Array(arrayBuffer, offset, Math.min(length, 20))).trim()
-        plan.numberOfBeams = parseInt(val) || 0
-      } else if (tag === '300A00B2') { // Machine Name
-        plan.machine = decoder.decode(new Uint8Array(arrayBuffer, offset, Math.min(length, 100))).trim()
-      } else if (tag === '300A00C0') { // Beam Number
-        const beamNum = decoder.decode(new Uint8Array(arrayBuffer, offset, Math.min(length, 20))).trim()
-        currentBeam = { 
-          number: parseInt(beamNum) || 0, 
-          name: '', 
-          type: '',
-          technique: '',
-          radiationType: '',
-          energy: '',
-          gantryAngle: null,
-          gantryRotationDirection: '',
-          collimatorAngle: null,
-          couchAngle: null,
-          mu: 0,
-          doseRate: '',
-          numControlPoints: 0,
-          controlPoints: [],
-          jawX: null,
-          jawY: null,
-          isArc: false,
-          arcStartAngle: null,
-          arcStopAngle: null
-        }
-        plan.beams.push(currentBeam)
-      } else if (tag === '300A00C2' && currentBeam) { // Beam Name
-        currentBeam.name = decoder.decode(new Uint8Array(arrayBuffer, offset, Math.min(length, 100))).trim()
-      } else if (tag === '300A00C3' && currentBeam) { // Beam Description
-        currentBeam.description = decoder.decode(new Uint8Array(arrayBuffer, offset, Math.min(length, 200))).trim()
-      } else if (tag === '300A00C4' && currentBeam) { // Beam Type
-        currentBeam.type = decoder.decode(new Uint8Array(arrayBuffer, offset, Math.min(length, 50))).trim()
-        // Detectar si es arco
-        if (currentBeam.type.includes('ARC') || currentBeam.type.includes('VMAT')) {
-          currentBeam.isArc = true
-        }
-      } else if (tag === '300A00C6' && currentBeam) { // Radiation Type
-        currentBeam.radiationType = decoder.decode(new Uint8Array(arrayBuffer, offset, Math.min(length, 50))).trim()
-      } else if (tag === '300A00C7' && currentBeam) { // Treatment Delivery Type
-        currentBeam.technique = decoder.decode(new Uint8Array(arrayBuffer, offset, Math.min(length, 50))).trim()
-      } else if (tag === '300A0114' && currentBeam) { // Nominal Beam Energy
-        currentBeam.energy = decoder.decode(new Uint8Array(arrayBuffer, offset, Math.min(length, 50))).trim()
-      } else if (tag === '300A0115' && currentBeam) { // Dose Rate Set
-        currentBeam.doseRate = decoder.decode(new Uint8Array(arrayBuffer, offset, Math.min(length, 50))).trim()
-      } else if (tag === '300A0110' && currentBeam) { // Number of Control Points
-        const val = decoder.decode(new Uint8Array(arrayBuffer, offset, Math.min(length, 20))).trim()
-        currentBeam.numControlPoints = parseInt(val) || 0
-      } else if (tag === '300A0112' && currentBeam) { // Control Point Index
-        const idx = decoder.decode(new Uint8Array(arrayBuffer, offset, Math.min(length, 20))).trim()
-        currentControlPoint = {
-          index: parseInt(idx) || 0,
-          gantryAngle: null,
-          collimatorAngle: null,
-          couchAngle: null,
-          mu: null,
-          jawX: null,
-          jawY: null
-        }
-        currentBeam.controlPoints.push(currentControlPoint)
-      } else if (tag === '300A011E' && currentControlPoint) { // Gantry Angle
-        const val = decoder.decode(new Uint8Array(arrayBuffer, offset, Math.min(length, 20))).trim()
-        currentControlPoint.gantryAngle = parseFloat(val)
-        if (currentBeam && currentBeam.gantryAngle === null) {
-          currentBeam.gantryAngle = currentControlPoint.gantryAngle
-        }
-      } else if (tag === '300A011F' && currentBeam) { // Gantry Rotation Direction
-        currentBeam.gantryRotationDirection = decoder.decode(new Uint8Array(arrayBuffer, offset, Math.min(length, 20))).trim()
-      } else if (tag === '300A0120' && currentControlPoint) { // Beam Limiting Device Angle (Collimator)
-        const val = decoder.decode(new Uint8Array(arrayBuffer, offset, Math.min(length, 20))).trim()
-        currentControlPoint.collimatorAngle = parseFloat(val)
-        if (currentBeam && currentBeam.collimatorAngle === null) {
-          currentBeam.collimatorAngle = currentControlPoint.collimatorAngle
-        }
-      } else if (tag === '300A0122' && currentControlPoint) { // Patient Support Angle (Couch)
-        const val = decoder.decode(new Uint8Array(arrayBuffer, offset, Math.min(length, 20))).trim()
-        currentControlPoint.couchAngle = parseFloat(val)
-        if (currentBeam && currentBeam.couchAngle === null) {
-          currentBeam.couchAngle = currentControlPoint.couchAngle
-        }
-      } else if (tag === '300A0134' && currentControlPoint) { // Cumulative Meterset Weight
-        const val = decoder.decode(new Uint8Array(arrayBuffer, offset, Math.min(length, 20))).trim()
-        currentControlPoint.mu = parseFloat(val)
-      } else if (tag === '300A011A') { // Beam Limiting Device Position (Jaws)
-        const positions = []
-        let pos = offset
-        while (pos < offset + length && positions.length < 4) {
-          const val = decoder.decode(new Uint8Array(arrayBuffer, pos, 16)).trim()
-          const num = parseFloat(val)
-          if (!isNaN(num)) positions.push(num)
-          pos += 16
-        }
-        if (positions.length >= 2) {
-          const jawPos = { x1: positions[0], x2: positions[1] }
-          if (positions.length >= 4) {
-            jawPos.y1 = positions[2]
-            jawPos.y2 = positions[3]
-          }
-          if (currentControlPoint) {
-            currentControlPoint.jawX = [jawPos.x1, jawPos.x2]
-            currentControlPoint.jawY = jawPos.y1 !== undefined ? [jawPos.y1, jawPos.y2] : null
-          }
-          if (currentBeam && !currentBeam.jawX) {
-            currentBeam.jawX = [jawPos.x1, jawPos.x2]
-            currentBeam.jawY = jawPos.y1 !== undefined ? [jawPos.y1, jawPos.y2] : null
-          }
-        }
+      // Validar longitud
+      if (length < 0 || length > arrayBuffer.byteLength || valueOffset + length > arrayBuffer.byteLength) {
+        if (shouldLog) console.log('  ⚠️ Longitud inválida, saltando...')
+        offset = valueOffset
+        continue
       }
 
-      offset += length
+      // Extraer valor (limitar a 1000 bytes para el log)
+      const valueBytes = new Uint8Array(arrayBuffer, valueOffset, Math.min(length, 1000))
+      const value = decoder.decode(valueBytes).trim()
+      
+      if (shouldLog && length > 0 && length < 200) {
+        console.log('  Valor:', value)
+      } else if (shouldLog && length > 0) {
+        console.log('  Valor (primeros 50 chars):', value.substring(0, 50) + '...')
+      }
+
+      // Parsear tags importantes
+      let tagParsed = false
+      
+      switch(tag) {
+        case '00100010': // Patient Name
+          plan.patientName = value
+          tagsFound++
+          tagParsed = true
+          console.log('  ✓ PATIENT NAME:', value)
+          break
+        case '00100020': // Patient ID
+          plan.patientID = value
+          tagsFound++
+          tagParsed = true
+          console.log('  ✓ PATIENT ID:', value)
+          break
+        case '300A0002': // RT Plan Label
+          plan.planLabel = value
+          tagsFound++
+          tagParsed = true
+          console.log('  ✓ RT PLAN LABEL:', value)
+          break
+        case '300A0003': // RT Plan Name
+          if (!plan.planLabel) plan.planLabel = value
+          tagParsed = true
+          console.log('  ✓ RT PLAN NAME:', value)
+          break
+        case '300A0004': // RT Plan Description
+          plan.planDescription = value
+          tagParsed = true
+          console.log('  ✓ RT PLAN DESCRIPTION:', value)
+          break
+        case '300A0006': // RT Plan Date
+          plan.planDate = value
+          tagParsed = true
+          console.log('  ✓ RT PLAN DATE:', value)
+          break
+        case '300A0007': // RT Plan Time
+          plan.planTime = value
+          tagParsed = true
+          console.log('  ✓ RT PLAN TIME:', value)
+          break
+        case '300A0009': // Treatment Sites
+          plan.treatmentSites = value
+          tagParsed = true
+          console.log('  ✓ TREATMENT SITES:', value)
+          break
+        case '300A000A': // RT Plan Intent
+          plan.planIntent = value
+          tagParsed = true
+          console.log('  ✓ RT PLAN INTENT:', value)
+          break
+        case '300A0070': // Number of Fractions
+          plan.numberOfFractions = parseInt(value) || 0
+          tagParsed = true
+          console.log('  ✓ NUMBER OF FRACTIONS:', plan.numberOfFractions)
+          break
+        case '300A0026': // Target Prescription Dose
+          plan.prescribedDose = parseFloat(value) || 0
+          tagParsed = true
+          console.log('  ✓ PRESCRIBED DOSE:', plan.prescribedDose)
+          break
+        case '300A0080': // Number of Beams
+          plan.numberOfBeams = parseInt(value) || 0
+          tagParsed = true
+          console.log('  ✓ NUMBER OF BEAMS:', plan.numberOfBeams)
+          break
+        case '300A00B2': // Machine Name
+          plan.machine = value
+          tagParsed = true
+          console.log('  ✓ MACHINE NAME:', value)
+          break
+        case '300A00C0': // Beam Number
+          currentBeam = {
+            number: parseInt(value) || 0,
+            name: '',
+            type: '',
+            technique: '',
+            radiationType: '',
+            energy: '',
+            gantryAngle: null,
+            gantryRotationDirection: '',
+            collimatorAngle: null,
+            couchAngle: null,
+            mu: 0,
+            doseRate: '',
+            numControlPoints: 0,
+            controlPoints: [],
+            jawX: null,
+            jawY: null,
+            isArc: false,
+            arcStartAngle: null,
+            arcStopAngle: null
+          }
+          plan.beams.push(currentBeam)
+          tagParsed = true
+          console.log('  ✓ NEW BEAM #:', currentBeam.number)
+          break
+        case '300A00C2': // Beam Name
+          if (currentBeam) {
+            currentBeam.name = value
+            tagParsed = true
+            console.log('  ✓ BEAM NAME:', value)
+          }
+          break
+        case '300A00C4': // Beam Type
+          if (currentBeam) {
+            currentBeam.type = value
+            if (value.includes('ARC') || value.includes('VMAT')) {
+              currentBeam.isArc = true
+            }
+            tagParsed = true
+            console.log('  ✓ BEAM TYPE:', value, currentBeam.isArc ? '(ARC)' : '')
+          }
+          break
+        case '300A00C6': // Radiation Type
+          if (currentBeam) {
+            currentBeam.radiationType = value
+            tagParsed = true
+            console.log('  ✓ RADIATION TYPE:', value)
+          }
+          break
+        case '300A0114': // Nominal Beam Energy
+          if (currentBeam) {
+            currentBeam.energy = value
+            tagParsed = true
+            console.log('  ✓ BEAM ENERGY:', value)
+          }
+          break
+        case '300A0110': // Number of Control Points
+          if (currentBeam) {
+            currentBeam.numControlPoints = parseInt(value) || 0
+            tagParsed = true
+            console.log('  ✓ NUM CONTROL POINTS:', currentBeam.numControlPoints)
+          }
+          break
+        case '300A0112': // Control Point Index
+          if (currentBeam) {
+            currentControlPoint = {
+              index: parseInt(value) || 0,
+              gantryAngle: null,
+              collimatorAngle: null,
+              couchAngle: null,
+              mu: null,
+              jawX: null,
+              jawY: null
+            }
+            currentBeam.controlPoints.push(currentControlPoint)
+            tagParsed = true
+            if (currentControlPoint.index < 3 || currentControlPoint.index === currentBeam.numControlPoints - 1) {
+              console.log('  ✓ CONTROL POINT INDEX:', currentControlPoint.index)
+            }
+          }
+          break
+        case '300A011E': // Gantry Angle
+          const gantryAngle = parseFloat(value)
+          if (!isNaN(gantryAngle)) {
+            if (currentControlPoint) {
+              currentControlPoint.gantryAngle = gantryAngle
+              tagParsed = true
+              if (currentControlPoint.index < 3 || currentControlPoint.index === currentBeam?.numControlPoints - 1) {
+                console.log('  ✓ GANTRY ANGLE:', gantryAngle)
+              }
+            }
+            if (currentBeam && currentBeam.gantryAngle === null) {
+              currentBeam.gantryAngle = gantryAngle
+            }
+          }
+          break
+        case '300A0120': // Beam Limiting Device Angle
+          const collAngle = parseFloat(value)
+          if (!isNaN(collAngle)) {
+            if (currentControlPoint) {
+              currentControlPoint.collimatorAngle = collAngle
+              tagParsed = true
+            }
+            if (currentBeam && currentBeam.collimatorAngle === null) {
+              currentBeam.collimatorAngle = collAngle
+            }
+          }
+          break
+        case '300A0122': // Patient Support Angle
+          const couchAngle = parseFloat(value)
+          if (!isNaN(couchAngle)) {
+            if (currentControlPoint) {
+              currentControlPoint.couchAngle = couchAngle
+              tagParsed = true
+            }
+            if (currentBeam && currentBeam.couchAngle === null) {
+              currentBeam.couchAngle = couchAngle
+            }
+          }
+          break
+        case '300A0134': // Cumulative Meterset Weight
+          const mu = parseFloat(value)
+          if (!isNaN(mu) && currentControlPoint) {
+            currentControlPoint.mu = mu
+            tagParsed = true
+          }
+          break
+      }
+
+      if (shouldLog && !tagParsed && isImportantTag) {
+        console.log('  (Tag no procesado)')
+      }
+
+      offset = valueOffset + length
     }
 
-    // Post-procesamiento: detectar ángulos de inicio/fin para arcos
+    console.log('\n=== RESUMEN DE PARSING ===')
+    console.log('Tags procesados:', tagsProcessed)
+    console.log('Tags importantes encontrados:', tagsFound)
+    console.log('Haces encontrados:', plan.beams.length)
+    
+    if (plan.beams.length > 0) {
+      console.log('\nDetalles de haces:')
+      plan.beams.forEach((beam, idx) => {
+        console.log(`  Haz ${idx + 1}:`, {
+          number: beam.number,
+          name: beam.name,
+          type: beam.type,
+          controlPoints: beam.controlPoints.length
+        })
+      })
+    }
+
+    // Post-procesamiento
     plan.beams.forEach(beam => {
       if (beam.isArc && beam.controlPoints.length >= 2) {
         beam.arcStartAngle = beam.controlPoints[0].gantryAngle
         beam.arcStopAngle = beam.controlPoints[beam.controlPoints.length - 1].gantryAngle
       }
-      // Calcular MU total del último control point
       if (beam.controlPoints.length > 0) {
         const lastCP = beam.controlPoints[beam.controlPoints.length - 1]
         if (lastCP.mu !== null) {
@@ -227,8 +370,18 @@ export function parseRTPlan(arrayBuffer) {
       }
     })
 
+    if (tagsFound === 0) {
+      console.error('❌ No se encontraron tags DICOM válidos')
+      throw new Error('No se encontraron tags DICOM válidos. Verifica que sea un archivo RT Plan.')
+    }
+
+    console.log('\n✓ Parsing completado exitosamente')
+    console.log('=== FIN PARSING RT PLAN ===\n')
+
   } catch (err) {
-    console.error('Error parsing RT Plan:', err)
+    console.error('❌ Error durante el parsing:', err)
+    console.error('Stack:', err.stack)
+    throw err
   }
 
   return plan

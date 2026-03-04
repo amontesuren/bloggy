@@ -10,6 +10,8 @@ import Admin from './pages/Admin'
 import QuizCreator from './pages/QuizCreator'
 import QuizList from './pages/QuizList'
 import QuizPlay from './pages/QuizPlay'
+import QuizHost from './pages/QuizHost'
+import QuizJoin from './pages/QuizJoin'
 
 function App() {
   return (
@@ -26,6 +28,8 @@ function App() {
       <Route path="/quiz-creator" element={<QuizCreator />} />
       <Route path="/quizzes" element={<QuizList />} />
       <Route path="/quiz/:quizId" element={<QuizPlay />} />
+      <Route path="/host/:quizId" element={<QuizHost />} />
+      <Route path="/join" element={<QuizJoin />} />
     </Routes>
   )
 }

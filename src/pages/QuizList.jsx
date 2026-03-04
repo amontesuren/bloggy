@@ -78,7 +78,7 @@ function QuizList() {
         ) : (
           <div className="quiz-grid">
             {filteredQuizzes.map(quiz => (
-              <div key={quiz.id} className="quiz-card" onClick={() => navigate(`/quiz/${quiz.id}`)}>
+              <div key={quiz.id} className="quiz-card">
                 <div className="quiz-card-header">
                   <h3>{quiz.titulo}</h3>
                   <span className="quiz-topic">{quiz.topic}</span>
@@ -88,9 +88,20 @@ function QuizList() {
                   <span><i className="bi bi-question-circle"></i> {quiz.preguntas?.length || 0} preguntas</span>
                   <span><i className="bi bi-clock"></i> ~{Math.ceil((quiz.preguntas?.reduce((sum, p) => sum + p.tiempo, 0) || 0) / 60)} min</span>
                 </div>
-                <button className="btn-play-small">
-                  Jugar <i className="bi bi-play-fill"></i>
-                </button>
+                <div className="quiz-card-actions">
+                  <button 
+                    className="btn-play-small"
+                    onClick={() => navigate(`/quiz/${quiz.id}`)}
+                  >
+                    Jugar Solo <i className="bi bi-play-fill"></i>
+                  </button>
+                  <button 
+                    className="btn-host-small"
+                    onClick={() => navigate(`/host/${quiz.id}`)}
+                  >
+                    <i className="bi bi-broadcast"></i> Jugar en Vivo
+                  </button>
+                </div>
               </div>
             ))}
           </div>
