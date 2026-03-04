@@ -43,6 +43,7 @@ export function parseRTPlan(arrayBuffer) {
 
   let currentBeam = null
   let currentControlPoint = null
+  let currentBeamLimitingDevice = null // Para rastrear el tipo de dispositivo actual
   let tagsFound = 0
   let tagsProcessed = 0
   const maxTagsToLog = 50 // Limitar logs para no saturar
@@ -106,9 +107,30 @@ export function parseRTPlan(arrayBuffer) {
         if (shouldLog) console.log('  Implicit VR, length:', length)
       }
 
-      // Manejar secuencias (undefined length)
+      // Manejar secuencias (undefined length o VR=SQ)
+      if (vr === 'SQ') {
+        if (shouldLog) console.log('  📦 SECUENCIA detectada, continuando lectura dentro...')
+        
+        // Para secuencias importantes, loguear
+        if (tag === '300A00B0') {
+          console.log('  📦 BEAM SEQUENCE - los haces están aquí')
+        } else if (tag === '300A0070') {
+          console.log('  📦 FRACTION GROUP SEQUENCE - buscando número de fracciones dentro...')
+        } else if (tag === '300A0111') {
+          console.log('  📦 CONTROL POINT SEQUENCE')
+        } else if (tag === '300A00B6') {
+          console.log('  📦📦📦 BEAM LIMITING DEVICE SEQUENCE - MORDAZAS Y MLC DENTRO')
+          console.log('  Control Point actual:', currentControlPoint ? 'CP #' + currentControlPoint.index : 'ninguno')
+          console.log('  Beam actual:', currentBeam ? 'Beam #' + currentBeam.number : 'ninguno')
+        }
+        
+        // NO saltar la secuencia, continuar leyendo dentro
+        offset = valueOffset
+        continue
+      }
+      
       if (length === 0xFFFFFFFF) {
-        if (shouldLog) console.log('  ⚠️ Secuencia con longitud indefinida, saltando...')
+        if (shouldLog) console.log('  ⚠️ Longitud indefinida, continuando...')
         offset = valueOffset
         continue
       }
@@ -117,6 +139,20 @@ export function parseRTPlan(arrayBuffer) {
       if (length < 0 || length > arrayBuffer.byteLength || valueOffset + length > arrayBuffer.byteLength) {
         if (shouldLog) console.log('  ⚠️ Longitud inválida, saltando...')
         offset = valueOffset
+        continue
+      }
+      
+      // Saltar tags privados (grupo impar > 0x0008)
+      if (group > 0x0008 && group % 2 === 1) {
+        if (shouldLog) console.log('  ⚠️ Tag privado (grupo impar), saltando...')
+        offset = valueOffset + length
+        continue
+      }
+      
+      // Saltar datos binarios grandes (OB, OW, etc.)
+      if (['OB', 'OW', 'OF', 'OD', 'OL'].includes(vr) && length > 100) {
+        if (shouldLog) console.log('  ⚠️ Datos binarios grandes, saltando...')
+        offset = valueOffset + length
         continue
       }
 
@@ -132,6 +168,21 @@ export function parseRTPlan(arrayBuffer) {
 
       // Parsear tags importantes
       let tagParsed = false
+      
+      // Detectar items de secuencia
+      if (tag === 'FFFEE000') {
+        if (shouldLog) console.log('  📌 ITEM de secuencia (length:', length, ')')
+        // Los datos del item están dentro, continuar leyendo
+        offset = valueOffset
+        continue
+      }
+      
+      // Detectar fin de item o secuencia
+      if (tag === 'FFFEE00D' || tag === 'FFFEE0DD') {
+        if (shouldLog) console.log('  🔚 Fin de item/secuencia')
+        offset = valueOffset
+        continue
+      }
       
       switch(tag) {
         case '00100010': // Patient Name
@@ -182,20 +233,56 @@ export function parseRTPlan(arrayBuffer) {
           tagParsed = true
           console.log('  ✓ RT PLAN INTENT:', value)
           break
-        case '300A0070': // Number of Fractions
-          plan.numberOfFractions = parseInt(value) || 0
-          tagParsed = true
-          console.log('  ✓ NUMBER OF FRACTIONS:', plan.numberOfFractions)
+        case '300A0070': // Fraction Group Sequence (es una secuencia, no el número)
+          // Este es el contenedor, el número real está en 300A0078 o 300A0071
+          console.log('  📦 FRACTION GROUP SEQUENCE - buscando número de fracciones dentro...')
           break
-        case '300A0026': // Target Prescription Dose
-          plan.prescribedDose = parseFloat(value) || 0
-          tagParsed = true
-          console.log('  ✓ PRESCRIBED DOSE:', plan.prescribedDose)
+        case '300A0071': // Fraction Group Number
+          console.log('  🔍 Tag 300A0071 detectado, valor:', value)
+          const fractions1 = parseInt(value)
+          if (!isNaN(fractions1) && fractions1 > 0 && fractions1 < 100) {
+            if (plan.numberOfFractions === 0) {
+              plan.numberOfFractions = fractions1
+              tagParsed = true
+              console.log('  ✓ NUMBER OF FRACTIONS (300A0071):', plan.numberOfFractions)
+            }
+          }
+          break
+        case '300A0078': // Number of Fractions Planned
+          console.log('  🔍 Tag 300A0078 detectado, valor:', value)
+          const fractions2 = parseInt(value)
+          if (!isNaN(fractions2) && fractions2 > 0) {
+            plan.numberOfFractions = fractions2
+            tagParsed = true
+            console.log('  ✓✓✓ NUMBER OF FRACTIONS PLANNED (300A0078):', plan.numberOfFractions)
+          }
+          break
+        case '300A0079': // Number of Fraction Pattern Digits per Week
+          console.log('  🔍 Tag 300A0079 detectado, valor:', value)
+          const fractions3 = parseInt(value)
+          if (!isNaN(fractions3) && fractions3 > 0 && fractions3 < 100) {
+            if (plan.numberOfFractions === 0) {
+              plan.numberOfFractions = fractions3
+              tagParsed = true
+              console.log('  ✓ NUMBER OF FRACTIONS (300A0079):', plan.numberOfFractions)
+            }
+          }
           break
         case '300A0080': // Number of Beams
           plan.numberOfBeams = parseInt(value) || 0
           tagParsed = true
           console.log('  ✓ NUMBER OF BEAMS:', plan.numberOfBeams)
+          break
+        case '300A0086': // Number of Fractions (Referenced Beam Number)
+          console.log('  🔍 Tag 300A0086 detectado, valor:', value)
+          const fractions4 = parseInt(value)
+          if (!isNaN(fractions4) && fractions4 > 0 && fractions4 < 100) {
+            if (plan.numberOfFractions === 0) {
+              plan.numberOfFractions = fractions4
+              tagParsed = true
+              console.log('  ✓ NUMBER OF FRACTIONS (300A0086):', plan.numberOfFractions)
+            }
+          }
           break
         case '300A00B2': // Machine Name
           plan.machine = value
@@ -275,7 +362,8 @@ export function parseRTPlan(arrayBuffer) {
               couchAngle: null,
               mu: null,
               jawX: null,
-              jawY: null
+              jawY: null,
+              mlcPositions: null // Para guardar posiciones de MLC
             }
             currentBeam.controlPoints.push(currentControlPoint)
             tagParsed = true
@@ -297,6 +385,16 @@ export function parseRTPlan(arrayBuffer) {
             if (currentBeam && currentBeam.gantryAngle === null) {
               currentBeam.gantryAngle = gantryAngle
             }
+          }
+          break
+        case '300A011F': // Gantry Rotation Direction
+          if (currentBeam) {
+            currentBeam.gantryRotationDirection = value
+            if (value && value !== 'NONE' && value !== '') {
+              currentBeam.isArc = true
+              console.log('  ✓✓✓ GANTRY ROTATION DIRECTION:', value, '(VMAT detectado)')
+            }
+            tagParsed = true
           }
           break
         case '300A0120': // Beam Limiting Device Angle
@@ -330,6 +428,163 @@ export function parseRTPlan(arrayBuffer) {
             tagParsed = true
           }
           break
+        case '300A011A': // Beam Limiting Device Position (Jaws)
+          console.log('  🔧 TAG 300A011A DETECTADO - Procesando posiciones de mordazas...')
+          console.log('  Valor raw:', value)
+          console.log('  Longitud:', length)
+          
+          // Las posiciones vienen como múltiples valores DS (Decimal String)
+          // Típicamente: X1, X2, Y1, Y2 o ASYMX, ASYMY, MLCX, MLCY
+          const positions = []
+          
+          // Intentar parsear como múltiples valores separados por backslash
+          const parts = value.split('\\')
+          console.log('  Partes separadas por \\:', parts)
+          
+          parts.forEach(part => {
+            const num = parseFloat(part.trim())
+            if (!isNaN(num)) positions.push(num)
+          })
+          
+          console.log('  ✓ Posiciones numéricas encontradas:', positions)
+          
+          if (positions.length >= 2) {
+            const jawData = {
+              x1: positions[0],
+              x2: positions[1],
+              y1: positions.length >= 4 ? positions[2] : null,
+              y2: positions.length >= 4 ? positions[3] : null
+            }
+            
+            console.log('  Jaw data procesado:', jawData)
+            
+            if (currentControlPoint) {
+              currentControlPoint.jawX = [jawData.x1, jawData.x2]
+              if (jawData.y1 !== null) {
+                currentControlPoint.jawY = [jawData.y1, jawData.y2]
+              }
+              tagParsed = true
+              console.log('  ✓✓✓ Mordazas asignadas a CP:', currentControlPoint.jawX, currentControlPoint.jawY)
+            }
+            
+            if (currentBeam && !currentBeam.jawX) {
+              currentBeam.jawX = [jawData.x1, jawData.x2]
+              if (jawData.y1 !== null) {
+                currentBeam.jawY = [jawData.y1, jawData.y2]
+              }
+              console.log('  ✓✓✓ Mordazas asignadas a Beam:', currentBeam.jawX, currentBeam.jawY)
+            }
+          } else {
+            console.log('  ⚠️ No se pudieron extraer suficientes posiciones')
+          }
+          break
+        case '300A011A': // Beam Limiting Device Position Sequence
+          console.log('  🔧 TAG 300A011A DETECTADO - Beam Limiting Device Position Sequence')
+          console.log('  Este es un contenedor de secuencia, las posiciones están dentro')
+          // Este tag es una secuencia, las posiciones reales están en 300A011C dentro de esta secuencia
+          break
+        case '300A00B6': // Beam Limiting Device Sequence
+          console.log('  🔧🔧🔧 TAG 300A00B6 DETECTADO - Beam Limiting Device Sequence')
+          console.log('  Control Point actual:', currentControlPoint ? 'CP #' + currentControlPoint.index : 'ninguno')
+          console.log('  Beam actual:', currentBeam ? 'Beam #' + currentBeam.number : 'ninguno')
+          // Este es el contenedor principal, dentro están los tipos y posiciones
+          break
+        case '300A00B4': // Beam Limiting Device Type
+          console.log('  🔧🔧🔧 Tipo de dispositivo limitador:', value)
+          currentBeamLimitingDevice = value // Guardar el tipo actual
+          // Guardar el tipo para saber si es X, Y, ASYMX, ASYMY, MLCX, MLCY
+          if (currentBeam) {
+            if (!currentBeam.jawTypes) currentBeam.jawTypes = []
+            currentBeam.jawTypes.push(value)
+          }
+          if (currentControlPoint) {
+            if (!currentControlPoint.currentJawType) {
+              currentControlPoint.currentJawType = value
+            }
+          }
+          tagParsed = true
+          break
+        case '300A011C': // Leaf/Jaw Positions
+          console.log('  🔧 TAG 300A011C DETECTADO - Posiciones de hojas/mordazas')
+          console.log('  Tipo de dispositivo actual:', currentBeamLimitingDevice)
+          console.log('  Control Point actual:', currentControlPoint ? 'CP #' + currentControlPoint.index : 'ninguno')
+          console.log('  Valor raw (primeros 100 chars):', value.substring(0, 100))
+          console.log('  Longitud:', length)
+          
+          // Las posiciones vienen como múltiples valores DS (Decimal String)
+          const leafPositions = []
+          
+          // Intentar parsear como múltiples valores separados por backslash
+          const leafParts = value.split('\\')
+          console.log('  Número de valores:', leafParts.length)
+          
+          leafParts.forEach(part => {
+            const num = parseFloat(part.trim())
+            if (!isNaN(num)) leafPositions.push(num)
+          })
+          
+          console.log('  ✓ Posiciones numéricas encontradas:', leafPositions.length, 'valores')
+          if (leafPositions.length <= 10) {
+            console.log('  Valores:', leafPositions)
+          } else {
+            console.log('  Primeros 10 valores:', leafPositions.slice(0, 10))
+          }
+          
+          // Si hay pocas posiciones (2-4), probablemente son mordazas
+          if (leafPositions.length >= 2 && leafPositions.length <= 4) {
+            console.log('  → Interpretando como MORDAZAS (pocas posiciones)')
+            
+            const deviceType = currentBeamLimitingDevice || currentControlPoint?.currentJawType || 'ASYMX'
+            console.log('  Tipo de dispositivo:', deviceType)
+            
+            if (currentControlPoint) {
+              if (deviceType.includes('X') || deviceType === 'ASYMX' || deviceType === 'X') {
+                currentControlPoint.jawX = [leafPositions[0], leafPositions[1]]
+                console.log('  ✓✓✓ Mordazas X asignadas a CP #' + currentControlPoint.index + ':', currentControlPoint.jawX)
+                tagParsed = true
+              } else if (deviceType.includes('Y') || deviceType === 'ASYMY' || deviceType === 'Y') {
+                currentControlPoint.jawY = [leafPositions[0], leafPositions[1]]
+                console.log('  ✓✓✓ Mordazas Y asignadas a CP #' + currentControlPoint.index + ':', currentControlPoint.jawY)
+                tagParsed = true
+              }
+            }
+            
+            // También asignar al beam si es el primer control point
+            if (currentBeam && currentControlPoint && currentControlPoint.index === 0) {
+              if (deviceType.includes('X') || deviceType === 'ASYMX' || deviceType === 'X') {
+                if (!currentBeam.jawX) {
+                  currentBeam.jawX = [leafPositions[0], leafPositions[1]]
+                  console.log('  ✓✓✓ Mordazas X asignadas a Beam:', currentBeam.jawX)
+                }
+              } else if (deviceType.includes('Y') || deviceType === 'ASYMY' || deviceType === 'Y') {
+                if (!currentBeam.jawY) {
+                  currentBeam.jawY = [leafPositions[0], leafPositions[1]]
+                  console.log('  ✓✓✓ Mordazas Y asignadas a Beam:', currentBeam.jawY)
+                }
+              }
+            }
+          } else if (leafPositions.length > 4) {
+            console.log('  → Interpretando como MLC (' + leafPositions.length + ' posiciones)')
+            
+            // Guardar posiciones de MLC en el control point
+            if (currentControlPoint) {
+              const deviceType = currentBeamLimitingDevice || 'MLCX'
+              
+              if (!currentControlPoint.mlcPositions) {
+                currentControlPoint.mlcPositions = {}
+              }
+              
+              currentControlPoint.mlcPositions[deviceType] = leafPositions
+              
+              if (currentControlPoint.index < 3) {
+                console.log('  ✓✓✓ Posiciones MLC (' + deviceType + ') guardadas en CP #' + currentControlPoint.index + ':', leafPositions.length, 'hojas')
+              }
+              tagParsed = true
+            }
+          } else {
+            console.log('  ⚠️ Número de posiciones inesperado:', leafPositions.length)
+          }
+          break
       }
 
       if (shouldLog && !tagParsed && isImportantTag) {
@@ -351,8 +606,24 @@ export function parseRTPlan(arrayBuffer) {
           number: beam.number,
           name: beam.name,
           type: beam.type,
-          controlPoints: beam.controlPoints.length
+          controlPoints: beam.controlPoints.length,
+          jawX: beam.jawX,
+          jawY: beam.jawY,
+          jawTypes: beam.jawTypes
         })
+        
+        // Mostrar mordazas del primer control point
+        if (beam.controlPoints.length > 0) {
+          const firstCP = beam.controlPoints[0]
+          console.log(`    CP #0 - jawX: ${firstCP.jawX}, jawY: ${firstCP.jawY}, mlcPositions: ${firstCP.mlcPositions ? Object.keys(firstCP.mlcPositions).join(', ') : 'ninguno'}`)
+          
+          // Mostrar detalles de cada dispositivo MLC
+          if (firstCP.mlcPositions) {
+            Object.entries(firstCP.mlcPositions).forEach(([deviceType, positions]) => {
+              console.log(`      Dispositivo "${deviceType}": ${positions.length} posiciones`)
+            })
+          }
+        }
       })
     }
 
@@ -366,6 +637,67 @@ export function parseRTPlan(arrayBuffer) {
         const lastCP = beam.controlPoints[beam.controlPoints.length - 1]
         if (lastCP.mu !== null) {
           beam.mu = lastCP.mu
+        }
+        
+        // Copiar mordazas del primer control point al beam si no las tiene
+        const firstCP = beam.controlPoints[0]
+        if (!beam.jawX && firstCP.jawX) {
+          beam.jawX = firstCP.jawX
+          console.log('  ✓ Copiando Jaw X del primer CP al beam:', beam.jawX)
+        }
+        if (!beam.jawY && firstCP.jawY) {
+          beam.jawY = firstCP.jawY
+          console.log('  ✓ Copiando Jaw Y del primer CP al beam:', beam.jawY)
+        }
+        
+        // ESTRATEGIA ALTERNATIVA: Si no hay mordazas pero sí hay MLC, 
+        // las primeras posiciones del MLC podrían ser las mordazas
+        if (!beam.jawX && !beam.jawY && firstCP.mlcPositions) {
+          console.log('  ⚠️ No se encontraron mordazas, buscando en posiciones MLC...')
+          
+          // Buscar dispositivos que podrían ser mordazas (ASYMX, ASYMY, X, Y)
+          Object.entries(firstCP.mlcPositions).forEach(([deviceType, positions]) => {
+            console.log('    Revisando dispositivo:', deviceType, 'con', positions.length, 'posiciones')
+            
+            // Si el dispositivo tiene exactamente 2 posiciones, son mordazas
+            if (positions.length === 2) {
+              if (deviceType.includes('X') || deviceType === 'ASYMX' || deviceType === 'X') {
+                beam.jawX = positions
+                console.log('    ✓✓✓ Mordazas X extraídas de MLC:', beam.jawX)
+              } else if (deviceType.includes('Y') || deviceType === 'ASYMY' || deviceType === 'Y') {
+                beam.jawY = positions
+                console.log('    ✓✓✓ Mordazas Y extraídas de MLC:', beam.jawY)
+              }
+            }
+            
+            // ESTRATEGIA VARIAN: Si tiene 120 posiciones (60 pares de hojas MLC),
+            // las primeras 4 posiciones son las mordazas X1, X2, Y1, Y2
+            // Solo vienen en el primer control point, luego están fijas
+            if (positions.length === 120 && !beam.jawX && !beam.jawY) {
+              console.log('    → Detectado formato Varian (120 posiciones)')
+              const first4 = positions.slice(0, 4)
+              console.log('    Primeras 4 posiciones (mordazas):', first4)
+              
+              // Extraer mordazas de las primeras 4 posiciones
+              beam.jawX = [first4[0], first4[1]]
+              beam.jawY = [first4[2], first4[3]]
+              console.log('    ✓✓✓ Mordazas extraídas del CP #0:')
+              console.log('      Jaw X:', beam.jawX)
+              console.log('      Jaw Y:', beam.jawY)
+              
+              // Copiar a todos los control points (porque están fijas)
+              beam.controlPoints.forEach(cp => {
+                if (!cp.jawX) cp.jawX = beam.jawX
+                if (!cp.jawY) cp.jawY = beam.jawY
+              })
+              console.log('    ✓ Mordazas copiadas a todos los', beam.controlPoints.length, 'control points')
+              
+              // Guardar las posiciones MLC sin las primeras 4 (solo las hojas reales)
+              const mlcOnly = positions.slice(4)
+              firstCP.mlcPositions[deviceType] = mlcOnly
+              console.log('    ✓ MLC limpiado: ahora tiene', mlcOnly.length, 'posiciones (sin mordazas)')
+            }
+          })
         }
       }
     })
@@ -430,15 +762,39 @@ export function formatRTPlanData(plan) {
 }
 
 function detectTechnique(beam) {
-  if (beam.isArc || beam.type?.includes('ARC')) {
+  // Detectar VMAT por múltiples criterios
+  if (beam.isArc || beam.type?.includes('ARC') || beam.type?.includes('VMAT')) {
     return 'VMAT'
   }
+  
+  // Si tiene dirección de rotación de gantry, es arco
+  if (beam.gantryRotationDirection && beam.gantryRotationDirection !== 'NONE') {
+    return 'VMAT'
+  }
+  
+  // Si tiene muchos puntos de control (>10) y ángulos de gantry diferentes, probablemente VMAT
+  if (beam.numControlPoints > 10 && beam.controlPoints?.length > 10) {
+    const uniqueAngles = new Set(beam.controlPoints.map(cp => cp.gantryAngle).filter(a => a !== null))
+    if (uniqueAngles.size > 5) {
+      return 'VMAT'
+    }
+  }
+  
+  // Si tiene ángulos de inicio y fin de arco
+  if (beam.arcStartAngle !== null && beam.arcStopAngle !== null) {
+    return 'VMAT'
+  }
+  
+  // IMRT si tiene múltiples puntos de control pero no es arco
+  if (beam.numControlPoints > 2 || beam.controlPoints?.length > 2) {
+    return 'IMRT'
+  }
+  
+  // 3DCRT si es estático
   if (beam.type?.includes('STATIC')) {
     return '3DCRT'
   }
-  if (beam.numControlPoints > 2) {
-    return 'IMRT'
-  }
+  
   return 'N/A'
 }
 

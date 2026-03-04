@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { parseRTPlan, formatRTPlanData } from '../utils/rtPlanParser'
 import '../styles/rtplan.css'
 
@@ -344,6 +344,9 @@ function PlanView({ plan, fileName }) {
 }
 
 function ComparisonSummary({ leftPlan, rightPlan }) {
+  const [beamMatching, setBeamMatching] = useState({})
+  const [showMatchingUI, setShowMatchingUI] = useState(false)
+  
   const differences = []
   const beamComparisons = []
 
@@ -370,21 +373,62 @@ function ComparisonSummary({ leftPlan, rightPlan }) {
     })
   }
 
-  // Comparar cada haz
-  const maxBeams = Math.max(leftPlan.beams.length, rightPlan.beams.length)
-  for (let i = 0; i < maxBeams; i++) {
-    const leftBeam = leftPlan.beams[i]
-    const rightBeam = rightPlan.beams[i]
+  // Auto-matching inteligente de haces
+  useEffect(() => {
+    const autoMatch = {}
     
-    if (!leftBeam || !rightBeam) {
-      beamComparisons.push({
-        beamNumber: leftBeam?.number || rightBeam?.number,
-        missing: !leftBeam ? 'left' : 'right',
-        differences: []
-      })
-      continue
-    }
+    leftPlan.beams.forEach((leftBeam, leftIdx) => {
+      // Intentar match por número de haz
+      const byNumber = rightPlan.beams.findIndex(rb => rb.number === leftBeam.number)
+      if (byNumber !== -1) {
+        autoMatch[leftIdx] = byNumber
+        return
+      }
+      
+      // Intentar match por nombre
+      const byName = rightPlan.beams.findIndex(rb => 
+        rb.name.toLowerCase() === leftBeam.name.toLowerCase()
+      )
+      if (byName !== -1) {
+        autoMatch[leftIdx] = byName
+        return
+      }
+      
+      // Intentar match por características similares (ángulo gantry, técnica)
+      const bySimilarity = rightPlan.beams.findIndex(rb => 
+        rb.technique === leftBeam.technique &&
+        Math.abs(parseFloat(rb.gantryAngle) - parseFloat(leftBeam.gantryAngle)) < 5
+      )
+      if (bySimilarity !== -1) {
+        autoMatch[leftIdx] = bySimilarity
+        return
+      }
+      
+      // Si no hay match, dejar sin emparejar
+      autoMatch[leftIdx] = -1
+    })
+    
+    setBeamMatching(autoMatch)
+  }, [leftPlan, rightPlan])
 
+  // Comparar cada haz según el matching
+  leftPlan.beams.forEach((leftBeam, leftIdx) => {
+    const rightIdx = beamMatching[leftIdx]
+    
+    if (rightIdx === undefined || rightIdx === -1) {
+      // Haz sin emparejar
+      beamComparisons.push({
+        leftBeam,
+        rightBeam: null,
+        leftIdx,
+        rightIdx: -1,
+        differences: [],
+        controlPointDiffs: []
+      })
+      return
+    }
+    
+    const rightBeam = rightPlan.beams[rightIdx]
     const beamDiffs = []
     
     // Comparar propiedades del haz
@@ -443,19 +487,61 @@ function ComparisonSummary({ leftPlan, rightPlan }) {
     
     if (beamDiffs.length > 0 || cpDiffs.length > 0) {
       beamComparisons.push({
-        beamNumber: leftBeam.number,
-        beamName: leftBeam.name,
+        leftBeam,
+        rightBeam,
+        leftIdx,
+        rightIdx,
         differences: beamDiffs,
         controlPointDiffs: cpDiffs
       })
     }
+  })
+
+  // Haces del plan derecho sin emparejar
+  rightPlan.beams.forEach((rightBeam, rightIdx) => {
+    const isMatched = Object.values(beamMatching).includes(rightIdx)
+    if (!isMatched) {
+      beamComparisons.push({
+        leftBeam: null,
+        rightBeam,
+        leftIdx: -1,
+        rightIdx,
+        differences: [],
+        controlPointDiffs: []
+      })
+    }
+  })
+
+  const handleBeamMatch = (leftIdx, rightIdx) => {
+    setBeamMatching(prev => ({
+      ...prev,
+      [leftIdx]: rightIdx
+    }))
   }
 
   return (
     <div className="comparison-summary">
-      <h3>
-        <i className="bi bi-clipboard-data"></i> Resumen de Diferencias
-      </h3>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+        <h3>
+          <i className="bi bi-clipboard-data"></i> Resumen de Diferencias
+        </h3>
+        <button 
+          onClick={() => setShowMatchingUI(!showMatchingUI)}
+          className="btn-sm"
+          style={{ background: 'var(--accent-color)' }}
+        >
+          <i className="bi bi-link-45deg"></i> {showMatchingUI ? 'Ocultar' : 'Emparejar Haces'}
+        </button>
+      </div>
+
+      {showMatchingUI && (
+        <BeamMatchingUI
+          leftBeams={leftPlan.beams}
+          rightBeams={rightPlan.beams}
+          matching={beamMatching}
+          onMatch={handleBeamMatch}
+        />
+      )}
       
       {differences.length === 0 && beamComparisons.length === 0 ? (
         <p className="no-differences">✓ Los planes son idénticos en todos los campos comparados</p>
@@ -488,72 +574,147 @@ function ComparisonSummary({ leftPlan, rightPlan }) {
           {beamComparisons.length > 0 && (
             <div className="comparison-section">
               <h4>Diferencias en Haces</h4>
-              {beamComparisons.map((beam, idx) => (
-                <div key={idx} className="beam-comparison">
-                  <div className="beam-comparison-header">
-                    <span className="beam-number">#{beam.beamNumber}</span>
-                    <span className="beam-name">{beam.beamName}</span>
-                    {beam.missing && (
-                      <span className="beam-missing">
-                        Falta en Plan {beam.missing === 'left' ? 'A' : 'B'}
-                      </span>
-                    )}
-                  </div>
-
-                  {beam.differences && beam.differences.length > 0 && (
-                    <table className="comparison-table">
-                      <thead>
-                        <tr>
-                          <th>Parámetro</th>
-                          <th>Plan A</th>
-                          <th>Plan B</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {beam.differences.map((diff, diffIdx) => (
-                          <tr key={diffIdx}>
-                            <td>{diff.field}</td>
-                            <td className="diff-value">{diff.left}</td>
-                            <td className="diff-value">{diff.right}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  )}
-
-                  {beam.controlPointDiffs && beam.controlPointDiffs.length > 0 && (
-                    <div className="control-point-comparison">
-                      <h5>
-                        <i className="bi bi-list-ol"></i> 
-                        Diferencias en Puntos de Control ({beam.controlPointDiffs.length})
-                      </h5>
-                      <table className="comparison-table">
-                        <thead>
-                          <tr>
-                            <th>CP #</th>
-                            <th>Campo</th>
-                            <th>Plan A</th>
-                            <th>Plan B</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {beam.controlPointDiffs.map((cpDiff, cpIdx) => (
-                            <tr key={cpIdx}>
-                              <td>{cpDiff.index}</td>
-                              <td>{cpDiff.field}</td>
-                              <td className="diff-value">{cpDiff.left}</td>
-                              <td className="diff-value">{cpDiff.right}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
-                </div>
+              {beamComparisons.map((comp, idx) => (
+                <BeamComparisonCard key={idx} comparison={comp} />
               ))}
             </div>
           )}
         </>
+      )}
+    </div>
+  )
+}
+
+function BeamMatchingUI({ leftBeams, rightBeams, matching, onMatch }) {
+  return (
+    <div className="beam-matching-ui">
+      <h4>Emparejar Haces Manualmente</h4>
+      <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '16px' }}>
+        Selecciona qué haz del Plan B corresponde a cada haz del Plan A
+      </p>
+      
+      <div className="matching-grid">
+        {leftBeams.map((leftBeam, leftIdx) => (
+          <div key={leftIdx} className="matching-row">
+            <div className="matching-left">
+              <span className="beam-number">#{leftBeam.number}</span>
+              <span className="beam-name">{leftBeam.name}</span>
+              <span className="beam-angle">{leftBeam.gantryAngle}°</span>
+            </div>
+            
+            <div className="matching-arrow">→</div>
+            
+            <select
+              className="dark-input matching-select"
+              value={matching[leftIdx] ?? -1}
+              onChange={(e) => onMatch(leftIdx, parseInt(e.target.value))}
+            >
+              <option value={-1}>Sin emparejar</option>
+              {rightBeams.map((rightBeam, rightIdx) => (
+                <option key={rightIdx} value={rightIdx}>
+                  #{rightBeam.number} - {rightBeam.name} ({rightBeam.gantryAngle}°)
+                </option>
+              ))}
+            </select>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function BeamComparisonCard({ comparison }) {
+  const { leftBeam, rightBeam, differences, controlPointDiffs } = comparison
+  
+  if (!leftBeam && rightBeam) {
+    return (
+      <div className="beam-comparison">
+        <div className="beam-comparison-header">
+          <span className="beam-missing">Solo en Plan B</span>
+          <span className="beam-number">#{rightBeam.number}</span>
+          <span className="beam-name">{rightBeam.name}</span>
+        </div>
+      </div>
+    )
+  }
+  
+  if (leftBeam && !rightBeam) {
+    return (
+      <div className="beam-comparison">
+        <div className="beam-comparison-header">
+          <span className="beam-missing">Solo en Plan A</span>
+          <span className="beam-number">#{leftBeam.number}</span>
+          <span className="beam-name">{leftBeam.name}</span>
+        </div>
+      </div>
+    )
+  }
+  
+  return (
+    <div className="beam-comparison">
+      <div className="beam-comparison-header">
+        <div>
+          <span className="beam-number">#{leftBeam.number}</span>
+          <span className="beam-name">{leftBeam.name}</span>
+        </div>
+        <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+          ↔ #{rightBeam.number} {rightBeam.name}
+        </div>
+      </div>
+
+      {differences && differences.length > 0 && (
+        <table className="comparison-table">
+          <thead>
+            <tr>
+              <th>Parámetro</th>
+              <th>Plan A</th>
+              <th>Plan B</th>
+            </tr>
+          </thead>
+          <tbody>
+            {differences.map((diff, diffIdx) => (
+              <tr key={diffIdx}>
+                <td>{diff.field}</td>
+                <td className="diff-value">{diff.left}</td>
+                <td className="diff-value">{diff.right}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+
+      {controlPointDiffs && controlPointDiffs.length > 0 && (
+        <div className="control-point-comparison">
+          <h5>
+            <i className="bi bi-list-ol"></i> 
+            Diferencias en Puntos de Control ({controlPointDiffs.length})
+          </h5>
+          <table className="comparison-table">
+            <thead>
+              <tr>
+                <th>CP #</th>
+                <th>Campo</th>
+                <th>Plan A</th>
+                <th>Plan B</th>
+              </tr>
+            </thead>
+            <tbody>
+              {controlPointDiffs.slice(0, 50).map((cpDiff, cpIdx) => (
+                <tr key={cpIdx} title={cpDiff.detail || ''}>
+                  <td>{cpDiff.index}</td>
+                  <td>{cpDiff.field}</td>
+                  <td className="diff-value">{cpDiff.left}</td>
+                  <td className="diff-value">{cpDiff.right}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {controlPointDiffs.length > 50 && (
+            <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '8px', textAlign: 'center' }}>
+              Mostrando primeras 50 de {controlPointDiffs.length} diferencias
+            </p>
+          )}
+        </div>
       )}
     </div>
   )
@@ -643,6 +804,13 @@ function compareControlPoints(leftCPs, rightCPs) {
           right: `[${rightCP.jawX[0].toFixed(1)}, ${rightCP.jawX[1].toFixed(1)}]`
         })
       }
+    } else if ((leftCP.jawX && !rightCP.jawX) || (!leftCP.jawX && rightCP.jawX)) {
+      differences.push({
+        index: i,
+        field: 'Jaw X',
+        left: leftCP.jawX ? `[${leftCP.jawX[0].toFixed(1)}, ${leftCP.jawX[1].toFixed(1)}]` : 'N/A',
+        right: rightCP.jawX ? `[${rightCP.jawX[0].toFixed(1)}, ${rightCP.jawX[1].toFixed(1)}]` : 'N/A'
+      })
     }
 
     // Comparar mordazas Y
@@ -656,6 +824,64 @@ function compareControlPoints(leftCPs, rightCPs) {
           right: `[${rightCP.jawY[0].toFixed(1)}, ${rightCP.jawY[1].toFixed(1)}]`
         })
       }
+    } else if ((leftCP.jawY && !rightCP.jawY) || (!leftCP.jawY && rightCP.jawY)) {
+      differences.push({
+        index: i,
+        field: 'Jaw Y',
+        left: leftCP.jawY ? `[${leftCP.jawY[0].toFixed(1)}, ${leftCP.jawY[1].toFixed(1)}]` : 'N/A',
+        right: rightCP.jawY ? `[${rightCP.jawY[0].toFixed(1)}, ${rightCP.jawY[1].toFixed(1)}]` : 'N/A'
+      })
+    }
+
+    // Comparar posiciones de MLC
+    if (leftCP.mlcPositions || rightCP.mlcPositions) {
+      const leftMLC = leftCP.mlcPositions || {}
+      const rightMLC = rightCP.mlcPositions || {}
+      
+      // Obtener todos los tipos de dispositivos MLC
+      const allDeviceTypes = new Set([...Object.keys(leftMLC), ...Object.keys(rightMLC)])
+      
+      allDeviceTypes.forEach(deviceType => {
+        const leftPositions = leftMLC[deviceType]
+        const rightPositions = rightMLC[deviceType]
+        
+        if (!leftPositions || !rightPositions) {
+          differences.push({
+            index: i,
+            field: `MLC ${deviceType}`,
+            left: leftPositions ? `${leftPositions.length} hojas` : 'N/A',
+            right: rightPositions ? `${rightPositions.length} hojas` : 'N/A'
+          })
+        } else if (leftPositions.length !== rightPositions.length) {
+          differences.push({
+            index: i,
+            field: `MLC ${deviceType}`,
+            left: `${leftPositions.length} hojas`,
+            right: `${rightPositions.length} hojas`
+          })
+        } else {
+          // Comparar posición por posición
+          let hasDifference = false
+          let diffCount = 0
+          
+          for (let j = 0; j < leftPositions.length; j++) {
+            if (Math.abs(leftPositions[j] - rightPositions[j]) > 0.1) {
+              hasDifference = true
+              diffCount++
+            }
+          }
+          
+          if (hasDifference) {
+            differences.push({
+              index: i,
+              field: `MLC ${deviceType}`,
+              left: `${diffCount} hojas diferentes`,
+              right: `${diffCount} hojas diferentes`,
+              detail: `${diffCount} de ${leftPositions.length} hojas tienen diferencias > 0.1mm`
+            })
+          }
+        }
+      })
     }
   }
   
