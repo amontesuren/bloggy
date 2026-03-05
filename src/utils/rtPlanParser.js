@@ -117,7 +117,10 @@ export function parseRTPlan(arrayBuffer) {
         } else if (tag === '300A0070') {
           console.log('  📦 FRACTION GROUP SEQUENCE - buscando número de fracciones dentro...')
         } else if (tag === '300A0111') {
-          console.log('  📦 CONTROL POINT SEQUENCE')
+          console.log('  📦📦📦 CONTROL POINT SEQUENCE - puntos de control dentro')
+        } else if (tag === '300A011A') {
+          console.log('  📦📦📦📦 BEAM LIMITING DEVICE POSITION SEQUENCE - mordazas y MLC dentro')
+          console.log('  Control Point actual:', currentControlPoint ? 'CP #' + currentControlPoint.index : 'ninguno')
         } else if (tag === '300A00B6') {
           console.log('  📦📦📦 BEAM LIMITING DEVICE SEQUENCE - MORDAZAS Y MLC DENTRO')
           console.log('  Control Point actual:', currentControlPoint ? 'CP #' + currentControlPoint.index : 'ninguno')
@@ -479,8 +482,9 @@ export function parseRTPlan(arrayBuffer) {
           }
           break
         case '300A011A': // Beam Limiting Device Position Sequence
-          console.log('  🔧 TAG 300A011A DETECTADO - Beam Limiting Device Position Sequence')
-          console.log('  Este es un contenedor de secuencia, las posiciones están dentro')
+          console.log('  🔧🔧🔧 TAG 300A011A DETECTADO - Beam Limiting Device Position Sequence')
+          console.log('  Control Point actual:', currentControlPoint ? 'CP #' + currentControlPoint.index : 'ninguno')
+          console.log('  Este es un contenedor de secuencia, dentro están ASYMX, ASYMY, MLCX')
           // Este tag es una secuencia, las posiciones reales están en 300A011C dentro de esta secuencia
           break
         case '300A00B6': // Beam Limiting Device Sequence
@@ -491,6 +495,7 @@ export function parseRTPlan(arrayBuffer) {
           break
         case '300A00B4': // Beam Limiting Device Type
           console.log('  🔧🔧🔧 Tipo de dispositivo limitador:', value)
+          console.log('  Control Point actual:', currentControlPoint ? 'CP #' + currentControlPoint.index : 'ninguno')
           currentBeamLimitingDevice = value // Guardar el tipo actual
           // Guardar el tipo para saber si es X, Y, ASYMX, ASYMY, MLCX, MLCY
           if (currentBeam) {
@@ -530,59 +535,73 @@ export function parseRTPlan(arrayBuffer) {
             console.log('  Primeros 10 valores:', leafPositions.slice(0, 10))
           }
           
-          // Si hay pocas posiciones (2-4), probablemente son mordazas
-          if (leafPositions.length >= 2 && leafPositions.length <= 4) {
-            console.log('  → Interpretando como MORDAZAS (pocas posiciones)')
-            
-            const deviceType = currentBeamLimitingDevice || currentControlPoint?.currentJawType || 'ASYMX'
-            console.log('  Tipo de dispositivo:', deviceType)
-            
+          const deviceType = currentBeamLimitingDevice || 'UNKNOWN'
+          
+          // Detectar tipo de dispositivo y asignar posiciones
+          if (deviceType === 'ASYMX' && leafPositions.length === 2) {
+            console.log('  → ASYMX detectado (mordazas X)')
             if (currentControlPoint) {
-              if (deviceType.includes('X') || deviceType === 'ASYMX' || deviceType === 'X') {
-                currentControlPoint.jawX = [leafPositions[0], leafPositions[1]]
-                console.log('  ✓✓✓ Mordazas X asignadas a CP #' + currentControlPoint.index + ':', currentControlPoint.jawX)
-                tagParsed = true
-              } else if (deviceType.includes('Y') || deviceType === 'ASYMY' || deviceType === 'Y') {
-                currentControlPoint.jawY = [leafPositions[0], leafPositions[1]]
-                console.log('  ✓✓✓ Mordazas Y asignadas a CP #' + currentControlPoint.index + ':', currentControlPoint.jawY)
-                tagParsed = true
-              }
+              currentControlPoint.jawX = leafPositions
+              console.log('  ✓✓✓ Mordazas X asignadas a CP #' + currentControlPoint.index + ':', currentControlPoint.jawX)
             }
-            
-            // También asignar al beam si es el primer control point
-            if (currentBeam && currentControlPoint && currentControlPoint.index === 0) {
-              if (deviceType.includes('X') || deviceType === 'ASYMX' || deviceType === 'X') {
-                if (!currentBeam.jawX) {
-                  currentBeam.jawX = [leafPositions[0], leafPositions[1]]
-                  console.log('  ✓✓✓ Mordazas X asignadas a Beam:', currentBeam.jawX)
-                }
-              } else if (deviceType.includes('Y') || deviceType === 'ASYMY' || deviceType === 'Y') {
-                if (!currentBeam.jawY) {
-                  currentBeam.jawY = [leafPositions[0], leafPositions[1]]
-                  console.log('  ✓✓✓ Mordazas Y asignadas a Beam:', currentBeam.jawY)
-                }
-              }
+            if (currentBeam && !currentBeam.jawX) {
+              currentBeam.jawX = leafPositions
+              console.log('  ✓✓✓ Mordazas X asignadas a Beam:', currentBeam.jawX)
             }
-          } else if (leafPositions.length > 4) {
-            console.log('  → Interpretando como MLC (' + leafPositions.length + ' posiciones)')
-            
-            // Guardar posiciones de MLC en el control point
+            tagParsed = true
+          } else if (deviceType === 'ASYMY' && leafPositions.length === 2) {
+            console.log('  → ASYMY detectado (mordazas Y)')
             if (currentControlPoint) {
-              const deviceType = currentBeamLimitingDevice || 'MLCX'
-              
+              currentControlPoint.jawY = leafPositions
+              console.log('  ✓✓✓ Mordazas Y asignadas a CP #' + currentControlPoint.index + ':', currentControlPoint.jawY)
+            }
+            if (currentBeam && !currentBeam.jawY) {
+              currentBeam.jawY = leafPositions
+              console.log('  ✓✓✓ Mordazas Y asignadas a Beam:', currentBeam.jawY)
+            }
+            tagParsed = true
+          } else if (deviceType === 'MLCX' && leafPositions.length > 10) {
+            console.log('  → MLCX detectado (MLC con', leafPositions.length, 'posiciones)')
+            if (currentControlPoint) {
               if (!currentControlPoint.mlcPositions) {
                 currentControlPoint.mlcPositions = {}
               }
-              
               currentControlPoint.mlcPositions[deviceType] = leafPositions
               
               if (currentControlPoint.index < 3) {
-                console.log('  ✓✓✓ Posiciones MLC (' + deviceType + ') guardadas en CP #' + currentControlPoint.index + ':', leafPositions.length, 'hojas')
+                console.log('  ✓✓✓ Posiciones MLC guardadas en CP #' + currentControlPoint.index + ':', leafPositions.length, 'hojas')
+              }
+            }
+            tagParsed = true
+          } else if (leafPositions.length === 2) {
+            console.log('  → Interpretando como MORDAZAS (2 posiciones, tipo:', deviceType + ')')
+            
+            if (currentControlPoint) {
+              if (deviceType.includes('X') || deviceType === 'X') {
+                currentControlPoint.jawX = leafPositions
+                console.log('  ✓✓✓ Mordazas X asignadas a CP #' + currentControlPoint.index + ':', currentControlPoint.jawX)
+              } else if (deviceType.includes('Y') || deviceType === 'Y') {
+                currentControlPoint.jawY = leafPositions
+                console.log('  ✓✓✓ Mordazas Y asignadas a CP #' + currentControlPoint.index + ':', currentControlPoint.jawY)
+              }
+              tagParsed = true
+            }
+          } else if (leafPositions.length > 4) {
+            console.log('  → Interpretando como MLC (' + leafPositions.length + ' posiciones, tipo:', deviceType + ')')
+            
+            if (currentControlPoint) {
+              if (!currentControlPoint.mlcPositions) {
+                currentControlPoint.mlcPositions = {}
+              }
+              currentControlPoint.mlcPositions[deviceType] = leafPositions
+              
+              if (currentControlPoint.index < 3) {
+                console.log('  ✓✓✓ Posiciones MLC guardadas en CP #' + currentControlPoint.index + ':', leafPositions.length, 'hojas')
               }
               tagParsed = true
             }
           } else {
-            console.log('  ⚠️ Número de posiciones inesperado:', leafPositions.length)
+            console.log('  ⚠️ Número de posiciones inesperado:', leafPositions.length, 'para dispositivo:', deviceType)
           }
           break
       }
