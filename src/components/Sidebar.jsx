@@ -10,6 +10,7 @@ const links = [
   { href: '/restricciones-lu177', icon: 'bi-activity', label: 'Lu-177 Restricciones', section: 'Aplicaciones' },
   { href: '/uniformidad-gamma', icon: 'bi-grid-1x2-fill', label: 'Uniformidad NEMA', section: 'Aplicaciones' },
   { href: '/rtplan-compare', icon: 'bi-file-earmark-diff', label: 'Comparar RT Plans', section: 'Aplicaciones' },
+  { href: '/tg43-calculator', icon: 'bi-radioactive', label: 'Calculador TG-43', section: 'Aplicaciones' },
   { href: '/quizzes', icon: 'bi-trophy', label: 'Quizzes', section: 'Juegos' }
 ]
 
