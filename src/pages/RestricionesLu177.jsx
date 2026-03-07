@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, Fragment } from 'react'
 import { Chart, registerables } from 'chart.js'
 
 Chart.register(...registerables)
@@ -281,8 +281,8 @@ function RestricionesLu177() {
             </thead>
             <tbody>
               {results.map((row, idx) => (
-                <>
-                  <tr key={idx}>
+                <Fragment key={idx}>
+                  <tr>
                     <td style={{
                       padding: '12px 16px',
                       borderBottom: '1px solid var(--border-sub)',
@@ -322,7 +322,7 @@ function RestricionesLu177() {
                     </td>
                   </tr>
                   {showDebug && (
-                    <tr key={`debug-${idx}`} style={{
+                    <tr style={{
                       background: 'var(--bg-tertiary)',
                       color: 'var(--text-muted)',
                       fontFamily: 'monospace',
@@ -336,7 +336,7 @@ function RestricionesLu177() {
                       </td>
                     </tr>
                   )}
-                </>
+                </Fragment>
               ))}
             </tbody>
           </table>

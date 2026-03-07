@@ -41,7 +41,8 @@ export function parseRTPlan(arrayBuffer) {
     planGeometry: '',
     planIntent: '',
     treatmentSites: '',
-    numberOfBeams: 0
+    numberOfBeams: 0,
+    isoCenter: ''
   }
 
   let currentBeam = null
@@ -182,6 +183,28 @@ export function parseRTPlan(arrayBuffer) {
         case '300A000A': // RT Plan Intent
           plan.planIntent = value
           break
+        case '300A000C': // RT Plan Geometry
+          plan.planGeometry = value
+          break
+        case '300A0018': { // Dose Reference Point Coordinates (isocenter, mm)
+          if (!plan.isoCenter) {
+            const coords = value.split('\\').map(v => parseFloat(v.trim())).filter(v => !isNaN(v))
+            if (coords.length === 3) {
+              plan.isoCenter = `(${coords[0].toFixed(1)}, ${coords[1].toFixed(1)}, ${coords[2].toFixed(1)}) mm`
+              console.log('  ✓ ISOCENTER:', plan.isoCenter)
+            }
+          }
+          break
+        }
+        case '300A0026': { // Target Prescription Dose (Gy)
+          const dose = parseFloat(value)
+          if (!isNaN(dose) && dose > 0) {
+            plan.targetPrescriptionDose = dose
+            if (!plan.prescribedDose) plan.prescribedDose = dose
+            console.log('  ✓ TARGET PRESCRIPTION DOSE:', dose, 'Gy')
+          }
+          break
+        }
         case '300A0078': // Number of Fractions Planned
           {
             const nfx = parseInt(value)
@@ -263,6 +286,11 @@ export function parseRTPlan(arrayBuffer) {
             console.log('  ✓ BEAM NAME:', value)
           }
           break
+        case '300A00CE': // Treatment Delivery Type
+          if (currentBeam) {
+            currentBeam.technique = value
+          }
+          break
         case '300A00C4': // Beam Type
           if (currentBeam) {
             currentBeam.type = value
@@ -275,6 +303,22 @@ export function parseRTPlan(arrayBuffer) {
         case '300A00C6': // Radiation Type
           if (currentBeam) {
             currentBeam.radiationType = value
+          }
+          break
+        case '300A00D0': // Number of Wedges
+          if (currentBeam) {
+            currentBeam.numWedges = parseInt(value) || 0
+          }
+          break
+        case '300A00F0': // Number of Blocks
+          if (currentBeam) {
+            currentBeam.numBlocks = parseInt(value) || 0
+          }
+          break
+        case '300A0115': // Dose Rate Set
+          if (currentBeam) {
+            currentBeam.doseRate = value
+            console.log('  ✓ DOSE RATE:', value)
           }
           break
         case '300A0114': // Nominal Beam Energy
@@ -505,7 +549,8 @@ export function formatRTPlanData(plan) {
       { label: 'Número de Fracciones', value: plan.numberOfFractions || 'N/A' },
       { label: 'Dosis Prescrita', value: plan.prescribedDose ? `${plan.prescribedDose.toFixed(2)} Gy` : 'N/A' },
       { label: 'Máquina', value: plan.machine || 'N/A' },
-      { label: 'Número de Haces', value: plan.numberOfBeams || plan.beams.length }
+      { label: 'Número de Haces', value: plan.numberOfBeams || plan.beams.length },
+      { label: 'Isocéntro', value: plan.isoCenter || 'N/A' }
     ],
     beams: plan.beams.map(beam => ({
       number: beam.number,

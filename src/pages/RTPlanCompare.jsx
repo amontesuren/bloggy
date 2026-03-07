@@ -373,41 +373,50 @@ function ComparisonSummary({ leftPlan, rightPlan }) {
     })
   }
 
-  // Auto-matching inteligente de haces
+  // Auto-matching inteligente de haces: nombre → número → similitud
   useEffect(() => {
     const autoMatch = {}
-    
+    const usedRight = new Set()
+
+    // Paso 1: match exacto por nombre
     leftPlan.beams.forEach((leftBeam, leftIdx) => {
-      // Intentar match por número de haz
-      const byNumber = rightPlan.beams.findIndex(rb => rb.number === leftBeam.number)
-      if (byNumber !== -1) {
-        autoMatch[leftIdx] = byNumber
-        return
-      }
-      
-      // Intentar match por nombre
-      const byName = rightPlan.beams.findIndex(rb => 
-        rb.name.toLowerCase() === leftBeam.name.toLowerCase()
+      const idx = rightPlan.beams.findIndex((rb, ri) =>
+        !usedRight.has(ri) && rb.name.toLowerCase() === leftBeam.name.toLowerCase()
       )
-      if (byName !== -1) {
-        autoMatch[leftIdx] = byName
-        return
+      if (idx !== -1) {
+        autoMatch[leftIdx] = idx
+        usedRight.add(idx)
       }
-      
-      // Intentar match por características similares (ángulo gantry, técnica)
-      const bySimilarity = rightPlan.beams.findIndex(rb => 
+    })
+
+    // Paso 2: match por número de haz (para los que no tienen match por nombre)
+    leftPlan.beams.forEach((leftBeam, leftIdx) => {
+      if (autoMatch[leftIdx] !== undefined) return
+      const idx = rightPlan.beams.findIndex((rb, ri) =>
+        !usedRight.has(ri) && rb.number === leftBeam.number
+      )
+      if (idx !== -1) {
+        autoMatch[leftIdx] = idx
+        usedRight.add(idx)
+      }
+    })
+
+    // Paso 3: match por similitud (técnica + ángulo gantry ±5°)
+    leftPlan.beams.forEach((leftBeam, leftIdx) => {
+      if (autoMatch[leftIdx] !== undefined) return
+      const idx = rightPlan.beams.findIndex((rb, ri) =>
+        !usedRight.has(ri) &&
         rb.technique === leftBeam.technique &&
         Math.abs(parseFloat(rb.gantryAngle) - parseFloat(leftBeam.gantryAngle)) < 5
       )
-      if (bySimilarity !== -1) {
-        autoMatch[leftIdx] = bySimilarity
-        return
+      if (idx !== -1) {
+        autoMatch[leftIdx] = idx
+        usedRight.add(idx)
+      } else {
+        autoMatch[leftIdx] = -1
       }
-      
-      // Si no hay match, dejar sin emparejar
-      autoMatch[leftIdx] = -1
     })
-    
+
     setBeamMatching(autoMatch)
   }, [leftPlan, rightPlan])
 
@@ -438,6 +447,7 @@ function ComparisonSummary({ leftPlan, rightPlan }) {
       { key: 'type', label: 'Tipo' },
       { key: 'radiationType', label: 'Radiación' },
       { key: 'energy', label: 'Energía' },
+      { key: 'doseRate', label: 'Tasa de Dosis' },
       { key: 'gantryAngle', label: 'Ángulo Gantry' },
       { key: 'collimatorAngle', label: 'Ángulo Colimador' },
       { key: 'couchAngle', label: 'Ángulo Mesa' },

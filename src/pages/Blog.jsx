@@ -30,9 +30,8 @@ function fixDriveUrl(url) {
     if (m) fileId = m[1]
   }
   
-  // Si encontramos un ID, usar el formato que funcionaba
   if (fileId) {
-    return `https://lh3.googleusercontent.com/d/${fileId}`
+    return `https://lh3.googleusercontent.com/d/${fileId}=w1600`
   }
   
   return url
@@ -45,16 +44,16 @@ renderer.image = function(href, title, text) {
   const alt = text || ''
   const t = title
   
-  // Si hay texto alternativo, mostrar la imagen con caption
+  const attrs = `src="${src}" alt="${alt}"${t ? ` title="${t}"` : ''} referrerpolicy="no-referrer"`
+
   if (alt && alt.trim()) {
     return `<figure style="margin:1em 0;">
-      <img src="${src}" alt="${alt}"${t ? ` title="${t}"` : ''} style="max-width:100%;height:auto;border-radius:8px;display:block;">
+      <img ${attrs} style="max-width:100%;height:auto;border-radius:8px;display:block;">
       <figcaption style="margin-top:0.5em;font-size:0.9em;color:var(--text-muted);font-style:italic;">${alt}</figcaption>
     </figure>`
   }
-  
-  // Sin texto alternativo, solo la imagen
-  return `<img src="${src}" alt="${alt}"${t ? ` title="${t}"` : ''} style="max-width:100%;height:auto;border-radius:8px;margin:0.5em 0;display:block;">`
+
+  return `<img ${attrs} style="max-width:100%;height:auto;border-radius:8px;margin:0.5em 0;display:block;">`
 }
 marked.setOptions({ renderer })
 
