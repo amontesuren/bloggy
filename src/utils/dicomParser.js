@@ -1,44 +1,77 @@
-import dicomParser from 'dicom-parser'
+// Parser DICOM genérico usando dcmjs
+import dcmjs from 'dcmjs'
+
+const { DicomMessage } = dcmjs.data
 
 export function parseDICOM(arrayBuffer) {
-  const byteArray = new Uint8Array(arrayBuffer)
-  const dataSet = dicomParser.parseDicom(byteArray)
+  try {
+    // Parse DICOM con dcmjs
+    const dicomData = DicomMessage.readFile(arrayBuffer)
+    const dataset = dcmjs.data.DicomMetaDictionary.naturalizeDataset(dicomData.dict)
+    
+    // Extraer información de imagen
+    const rows = dataset.Rows || 0
+    const cols = dataset.Columns || 0
+    const bitsAllocated = dataset.BitsAllocated || 16
+    const pixelRepresentation = dataset.PixelRepresentation || 0
+    const numFrames = parseInt(dataset.NumberOfFrames) || 1
+    
+    // Obtener pixel data
+    const pixelDataElement = dicomData.dict['7FE00010']
+    if (!pixelDataElement) {
+      throw new Error('No se encontraron datos de píxel (tag 7FE0,0010)')
+    }
 
-  const rows = dataSet.uint16('x00280010')
-  const cols = dataSet.uint16('x00280011')
-  const bitsAllocated = dataSet.uint16('x00280100') || 16
-  const pixelRepresent = dataSet.uint16('x00280103') || 0
-  const numFramesStr = dataSet.string('x00280008')
-  const numFrames = numFramesStr ? parseInt(numFramesStr, 10) : 1
+    const framePixels = rows * cols
+    const bytesPerPixel = bitsAllocated / 8
+    
+    // Determinar el tipo de array según bits allocated y representación
+    let TypedArrayConstructor
+    if (bitsAllocated === 8) {
+      TypedArrayConstructor = Uint8Array
+    } else if (bitsAllocated === 16) {
+      TypedArrayConstructor = pixelRepresentation === 1 ? Int16Array : Uint16Array
+    } else if (bitsAllocated === 32) {
+      TypedArrayConstructor = pixelRepresentation === 1 ? Int32Array : Uint32Array
+    } else {
+      throw new Error(`Bits Allocated no soportado: ${bitsAllocated}`)
+    }
 
-  const pixelEl = dataSet.elements.x7fe00010
-  if (!pixelEl) throw new Error('No se encontraron datos de píxel (tag 7FE0,0010)')
+    // Extraer frames
+    const frames = []
+    const pixelData = new Uint8Array(arrayBuffer, pixelDataElement.dataOffset, pixelDataElement.length)
+    
+    for (let frameIndex = 0; frameIndex < numFrames; frameIndex++) {
+      const frameOffset = frameIndex * framePixels * bytesPerPixel
+      const frameBytes = pixelData.slice(frameOffset, frameOffset + framePixels * bytesPerPixel)
+      
+      // Crear typed array del frame
+      const frameTypedArray = new TypedArrayConstructor(
+        frameBytes.buffer,
+        frameBytes.byteOffset,
+        framePixels
+      )
+      
+      // Convertir a Float64Array para compatibilidad
+      const frameFloat = new Float64Array(framePixels)
+      for (let i = 0; i < framePixels; i++) {
+        frameFloat[i] = frameTypedArray[i]
+      }
+      
+      frames.push(frameFloat)
+    }
 
-  const offset = pixelEl.dataOffset
-  const framePixels = rows * cols
-  const bpp = bitsAllocated / 8
+    return {
+      frames,
+      rows,
+      cols,
+      numFrames,
+      bitsAllocated,
+      pixelRepresentation
+    }
 
-  function typedView(Type, byteOff, len) {
-    const es = Type.BYTES_PER_ELEMENT
-    if (byteOff % es === 0) return new Type(arrayBuffer, byteOff, len)
-    const src = new Uint8Array(arrayBuffer, byteOff, len * es)
-    const buf = new ArrayBuffer(len * es)
-    new Uint8Array(buf).set(src)
-    return new Type(buf, 0, len)
+  } catch (err) {
+    console.error('Error al parsear DICOM:', err)
+    throw new Error('Error al parsear archivo DICOM: ' + err.message)
   }
-
-  const TypedArr = bitsAllocated === 8 ? Uint8Array :
-    bitsAllocated === 32 ? (pixelRepresent ? Int32Array : Uint32Array) :
-      (pixelRepresent ? Int16Array : Uint16Array)
-
-  const frames = []
-  for (let f = 0; f < numFrames; f++) {
-    const fOff = offset + f * framePixels * bpp
-    const raw = typedView(TypedArr, fOff, framePixels)
-    const data = new Float64Array(framePixels)
-    for (let i = 0; i < framePixels; i++) data[i] = raw[i]
-    frames.push(data)
-  }
-
-  return { frames, rows, cols, numFrames }
 }

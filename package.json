@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "chart.js": "^4.5.1",
+    "dcmjs": "^0.50.1",
     "dicom-parser": "^1.8.21",
     "firebase": "^10.8.0",
     "highlight.js": "^11.9.0",
