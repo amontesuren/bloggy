@@ -15,12 +15,20 @@ export function parseRTPlanBrachy(arrayBuffer: ArrayBuffer): BrachyPlan {
     
     console.log('✓ DICOM parseado correctamente')
     
+    // Helper para extraer strings de campos DICOM que pueden ser objetos
+    const extractString = (value: any): string => {
+      if (!value) return ''
+      if (typeof value === 'string') return value
+      if (typeof value === 'object' && value.Alphabetic) return value.Alphabetic
+      return String(value)
+    }
+    
     // Información básica del plan
     const plan: BrachyPlan = {
-      patientName: dataset.PatientName || '',
-      patientID: dataset.PatientID || '',
-      planLabel: dataset.RTPlanLabel || dataset.RTPlanName || '',
-      planDate: dataset.RTPlanDate || '',
+      patientName: extractString(dataset.PatientName),
+      patientID: extractString(dataset.PatientID),
+      planLabel: extractString(dataset.RTPlanLabel || dataset.RTPlanName),
+      planDate: extractString(dataset.RTPlanDate),
       sourceIsotope: '',
       refAirKermaRate: 0,
       halfLife: 0,

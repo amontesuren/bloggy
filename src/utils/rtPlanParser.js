@@ -14,21 +14,29 @@ export function parseRTPlan(arrayBuffer) {
     
     console.log('✓ DICOM parseado correctamente')
     
+    // Helper para extraer strings de campos DICOM que pueden ser objetos
+    const extractString = (value) => {
+      if (!value) return ''
+      if (typeof value === 'string') return value
+      if (typeof value === 'object' && value.Alphabetic) return value.Alphabetic
+      return String(value)
+    }
+    
     const plan = {
-      patientName: dataset.PatientName || '',
-      patientID: dataset.PatientID || '',
-      planLabel: dataset.RTPlanLabel || dataset.RTPlanName || '',
-      planDate: dataset.RTPlanDate || '',
-      planTime: dataset.RTPlanTime || '',
-      planDescription: dataset.RTPlanDescription || '',
+      patientName: extractString(dataset.PatientName),
+      patientID: extractString(dataset.PatientID),
+      planLabel: extractString(dataset.RTPlanLabel || dataset.RTPlanName),
+      planDate: extractString(dataset.RTPlanDate),
+      planTime: extractString(dataset.RTPlanTime),
+      planDescription: extractString(dataset.RTPlanDescription),
       numberOfFractions: 0,
       prescribedDose: 0,
       targetPrescriptionDose: 0,
       beams: [],
       machine: '',
-      planGeometry: dataset.RTPlanGeometry || '',
-      planIntent: dataset.PlanIntent || '',
-      treatmentSites: dataset.TreatmentSites || '',
+      planGeometry: extractString(dataset.RTPlanGeometry),
+      planIntent: extractString(dataset.PlanIntent),
+      treatmentSites: extractString(dataset.TreatmentSites),
       numberOfBeams: 0,
       isoCenter: ''
     }
@@ -73,17 +81,17 @@ export function parseRTPlan(arrayBuffer) {
         
         const beam = {
           number: beamNumber,
-          name: beamData.BeamName || `Haz ${beamNumber}`,
-          type: beamData.BeamType || '',
-          technique: beamData.TreatmentDeliveryType || '',
-          radiationType: beamData.RadiationType || '',
-          energy: beamData.NominalBeamEnergy || '',
+          name: extractString(beamData.BeamName) || `Haz ${beamNumber}`,
+          type: extractString(beamData.BeamType),
+          technique: extractString(beamData.TreatmentDeliveryType),
+          radiationType: extractString(beamData.RadiationType),
+          energy: extractString(beamData.NominalBeamEnergy),
           gantryAngle: null,
           gantryRotationDirection: '',
           collimatorAngle: null,
           couchAngle: null,
           mu: beamMetersets[beamNumber] || 0,
-          doseRate: beamData.DoseRateSet || '',
+          doseRate: extractString(beamData.DoseRateSet),
           numControlPoints: 0,
           controlPoints: [],
           jawX: null,
@@ -97,7 +105,7 @@ export function parseRTPlan(arrayBuffer) {
 
         // Machine name
         if (beamData.TreatmentMachineName && !plan.machine) {
-          plan.machine = beamData.TreatmentMachineName
+          plan.machine = extractString(beamData.TreatmentMachineName)
         }
 
         // Detectar arco
@@ -131,8 +139,8 @@ export function parseRTPlan(arrayBuffer) {
 
             // Gantry Rotation Direction
             if (cpData.GantryRotationDirection) {
-              beam.gantryRotationDirection = cpData.GantryRotationDirection
-              if (cpData.GantryRotationDirection !== 'NONE' && cpData.GantryRotationDirection !== '') {
+              beam.gantryRotationDirection = extractString(cpData.GantryRotationDirection)
+              if (beam.gantryRotationDirection !== 'NONE' && beam.gantryRotationDirection !== '') {
                 beam.isArc = true
               }
             }
@@ -140,7 +148,7 @@ export function parseRTPlan(arrayBuffer) {
             // Beam Limiting Device Position Sequence (jaws y MLC)
             if (cpData.BeamLimitingDevicePositionSequence) {
               cpData.BeamLimitingDevicePositionSequence.forEach(device => {
-                const deviceType = device.RTBeamLimitingDeviceType
+                const deviceType = extractString(device.RTBeamLimitingDeviceType)
                 const positions = device.LeafJawPositions
                 
                 if (!deviceType || !positions || positions.length === 0) return
