@@ -31,6 +31,7 @@ export type BrachyPlan = {
   halfLife: number // días
   treatmentModel: string
   channels: Channel[]
+  doseReferencePoints?: Point[] // Puntos de referencia del plan
 }
 
 export type ParsedRTPlan = {

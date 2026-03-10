@@ -33,7 +33,8 @@ export function parseRTPlanBrachy(arrayBuffer: ArrayBuffer): BrachyPlan {
       refAirKermaRate: 0,
       halfLife: 0,
       treatmentModel: '',
-      channels: []
+      channels: [],
+      doseReferencePoints: []
     }
 
     // Source Sequence - información de la fuente
@@ -73,6 +74,41 @@ export function parseRTPlanBrachy(arrayBuffer: ArrayBuffer): BrachyPlan {
     // Treatment Machine Name
     if (dataset.TreatmentMachineName) {
       plan.treatmentModel = extractString(dataset.TreatmentMachineName)
+    }
+
+    // Dose Reference Sequence - puntos de referencia con dosis prescrita
+    if (dataset.DoseReferenceSequence && dataset.DoseReferenceSequence.length > 0) {
+      dataset.DoseReferenceSequence.forEach((doseRef: any, idx: number) => {
+        // Dose Reference Point Coordinates (x, y, z en mm)
+        if (doseRef.DoseReferencePointCoordinates && doseRef.DoseReferencePointCoordinates.length === 3) {
+          const coords: [number, number, number] = [
+            parseFloat(doseRef.DoseReferencePointCoordinates[0]),
+            parseFloat(doseRef.DoseReferencePointCoordinates[1]),
+            parseFloat(doseRef.DoseReferencePointCoordinates[2])
+          ]
+          
+          // Dose Reference Description o usar nombre por defecto
+          const name = extractString(doseRef.DoseReferenceDescription) || 
+                      extractString(doseRef.DoseReferenceStructureType) ||
+                      `Punto ${idx + 1}`
+          
+          // Target Prescription Dose (en Gy)
+          let prescribedDose: number | undefined
+          if (doseRef.TargetPrescriptionDose) {
+            prescribedDose = parseFloat(doseRef.TargetPrescriptionDose)
+          }
+          
+          const point: Point = {
+            name,
+            coords,
+            prescribedDose
+          }
+          
+          plan.doseReferencePoints!.push(point)
+          console.log(`✓ Punto de referencia: ${name} en [${coords[0].toFixed(1)}, ${coords[1].toFixed(1)}, ${coords[2].toFixed(1)}] mm` +
+                     (prescribedDose ? `, dosis: ${prescribedDose.toFixed(2)} Gy` : ''))
+        }
+      })
     }
 
     // Application Setup Sequence - contiene los canales y dwells
