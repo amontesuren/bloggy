@@ -7,8 +7,10 @@ export type Dwell = {
 }
 
 export type Channel = {
-  totalTime: number // segundos
-  numberOfDwells: number
+  number: number // número del canal
+  length: number // longitud del canal en mm
+  totalTime?: number // segundos (opcional)
+  numberOfDwells?: number // (opcional)
   dwells: Dwell[]
 }
 
@@ -17,6 +19,18 @@ export type Point = {
   coords: [number, number, number] // [x, y, z] en mm
   prescribedDose?: number // Gy
   calculatedDose?: number // Gy
+}
+
+export type BrachyPlan = {
+  patientName: string
+  patientID: string
+  planLabel: string
+  planDate: string
+  sourceIsotope: string
+  refAirKermaRate: number // U (cGy·cm²/h)
+  halfLife: number // días
+  treatmentModel: string
+  channels: Channel[]
 }
 
 export type ParsedRTPlan = {

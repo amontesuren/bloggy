@@ -93,12 +93,10 @@ export function parseRTPlanBrachy(arrayBuffer: ArrayBuffer): BrachyPlan {
             // Brachy Control Point Sequence - contiene los dwells
             if (channelData.BrachyControlPointSequence && channelData.BrachyControlPointSequence.length > 0) {
               channelData.BrachyControlPointSequence.forEach((cpData: any) => {
-                const cpIndex = parseInt(cpData.ControlPointIndex) || 0
-                
                 // Control Point 3D Position (coordenadas x, y, z en mm)
-                let position: [number, number, number] = [0, 0, 0]
+                let coords: [number, number, number] = [0, 0, 0]
                 if (cpData.ControlPoint3DPosition && cpData.ControlPoint3DPosition.length === 3) {
-                  position = [
+                  coords = [
                     parseFloat(cpData.ControlPoint3DPosition[0]),
                     parseFloat(cpData.ControlPoint3DPosition[1]),
                     parseFloat(cpData.ControlPoint3DPosition[2])
@@ -113,9 +111,9 @@ export function parseRTPlanBrachy(arrayBuffer: ArrayBuffer): BrachyPlan {
 
                 // Crear dwell
                 const dwell: Dwell = {
-                  index: cpIndex,
-                  position,
-                  dwellTime
+                  coords,
+                  dwellTime,
+                  timeWeight: 0 // Se calculará después si es necesario
                 }
 
                 channel.dwells.push(dwell)
