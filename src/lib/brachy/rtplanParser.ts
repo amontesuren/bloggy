@@ -42,7 +42,7 @@ export function parseRTPlanBrachy(arrayBuffer: ArrayBuffer): BrachyPlan {
       
       // Isótopo
       if (source.SourceIsotopeName) {
-        plan.sourceIsotope = source.SourceIsotopeName
+        plan.sourceIsotope = extractString(source.SourceIsotopeName)
       }
       
       // Reference Air Kerma Rate (en unidades U = µGy·m²/h)
@@ -72,7 +72,7 @@ export function parseRTPlanBrachy(arrayBuffer: ArrayBuffer): BrachyPlan {
 
     // Treatment Machine Name
     if (dataset.TreatmentMachineName) {
-      plan.treatmentModel = dataset.TreatmentMachineName
+      plan.treatmentModel = extractString(dataset.TreatmentMachineName)
     }
 
     // Application Setup Sequence - contiene los canales y dwells
