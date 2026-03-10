@@ -34,7 +34,9 @@ export function parseRTPlanBrachy(arrayBuffer: ArrayBuffer): BrachyPlan {
       halfLife: 0,
       treatmentModel: '',
       channels: [],
-      doseReferencePoints: []
+      doseReferencePoints: [],
+      sourceCalibrationDate: undefined,
+      treatmentDate: undefined
     }
 
     // Source Sequence - información de la fuente
@@ -49,6 +51,12 @@ export function parseRTPlanBrachy(arrayBuffer: ArrayBuffer): BrachyPlan {
       // Reference Air Kerma Rate (en unidades U = µGy·m²/h)
       if (source.ReferenceAirKermaRate) {
         plan.refAirKermaRate = parseFloat(source.ReferenceAirKermaRate)
+      }
+      
+      // Source Calibration Date (fecha de calibración)
+      if (source.SourceStrengthReferenceDate) {
+        plan.sourceCalibrationDate = extractString(source.SourceStrengthReferenceDate)
+        console.log('Fecha de calibración:', plan.sourceCalibrationDate)
       }
       
       // Active Source Diameter y Length (si están disponibles)
@@ -69,6 +77,12 @@ export function parseRTPlanBrachy(arrayBuffer: ArrayBuffer): BrachyPlan {
       // Valor por defecto para Ir-192
       plan.halfLife = 73.83
       console.log('⚠️ Half Life no encontrado, usando valor por defecto Ir-192:', plan.halfLife, 'días')
+    }
+
+    // Treatment Date - fecha de tratamiento planeada
+    if (dataset.RTPlanDate) {
+      plan.treatmentDate = extractString(dataset.RTPlanDate)
+      console.log('Fecha de tratamiento:', plan.treatmentDate)
     }
 
     // Treatment Machine Name

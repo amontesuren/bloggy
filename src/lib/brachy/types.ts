@@ -32,6 +32,8 @@ export type BrachyPlan = {
   treatmentModel: string
   channels: Channel[]
   doseReferencePoints?: Point[] // Puntos de referencia del plan
+  sourceCalibrationDate?: string // Fecha de calibración de la fuente
+  treatmentDate?: string // Fecha de tratamiento
 }
 
 export type ParsedRTPlan = {

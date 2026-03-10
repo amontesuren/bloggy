@@ -208,6 +208,30 @@ export function calculateTotalDose(
   return totalDose / 100 // convertir cGy a Gy
 }
 
+// Calcular factor de decaimiento radioactivo
+export function calculateDecayFactor(
+  initialDate: Date,
+  treatmentDate: Date,
+  halfLife: number // días
+): number {
+  const timeDiff = treatmentDate.getTime() - initialDate.getTime()
+  const daysDiff = timeDiff / (1000 * 60 * 60 * 24)
+  
+  // A(t) = A0 * e^(-λt) = A0 * 2^(-t/T½)
+  return Math.pow(2, -daysDiff / halfLife)
+}
+
+// Calcular actividad actual de la fuente
+export function calculateCurrentActivity(
+  initialActivity: number,
+  initialDate: Date,
+  currentDate: Date,
+  halfLife: number
+): number {
+  const decayFactor = calculateDecayFactor(initialDate, currentDate, halfLife)
+  return initialActivity * decayFactor
+}
+
 // Crear train de sources desde dwells
 export function makeSourceTrain(
   dwells: { coords: [number, number, number]; dwellTime: number }[],

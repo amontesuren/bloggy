@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react'
 import { parseRTPlanBrachy } from '../lib/brachy/rtplanParser'
-import { makeSourceTrain, calculateTotalDose } from '../lib/brachy/tg43'
+import { makeSourceTrain, calculateTotalDose, calculateDecayFactor, calculateCurrentActivity } from '../lib/brachy/tg43'
 import { IR192_CONSTANTS } from '../lib/brachy/sourceData'
 import '../styles/tg43.css'
 
@@ -11,6 +11,8 @@ function Tg43Calculator() {
   const [error, setError] = useState('')
   const [calculationPoints, setCalculationPoints] = useState([])
   const [results, setResults] = useState(null)
+  const [adjustedActivity, setAdjustedActivity] = useState(null)
+  const [useAdjustedActivity, setUseAdjustedActivity] = useState(false)
   
   const fileInputRef = useRef()
 
@@ -29,10 +31,23 @@ function Tg43Calculator() {
         setFileName(file.name)
         setLoading(false)
         
-        // Inicializar con un punto de ejemplo
-        setCalculationPoints([
-          { name: 'Punto A', x: 0, y: 0, z: 20, prescribedDose: null }
-        ])
+        // Cargar puntos de referencia del plan si existen
+        if (parsedPlan.doseReferencePoints && parsedPlan.doseReferencePoints.length > 0) {
+          const planPoints = parsedPlan.doseReferencePoints.map(point => ({
+            name: point.name,
+            x: point.coords[0],
+            y: point.coords[1],
+            z: point.coords[2],
+            prescribedDose: point.prescribedDose || null
+          }))
+          setCalculationPoints(planPoints)
+          console.log('✓ Cargados', planPoints.length, 'puntos de referencia del plan')
+        } else {
+          // Si no hay puntos en el plan, inicializar con un punto de ejemplo
+          setCalculationPoints([
+            { name: 'Punto A', x: 0, y: 0, z: 20, prescribedDose: null }
+          ])
+        }
       } catch (err) {
         setError('Error al parsear el archivo: ' + err.message)
         setLoading(false)
@@ -72,15 +87,21 @@ function Tg43Calculator() {
         allDwells.push(...channel.dwells)
       })
 
+      // Usar actividad ajustada si está habilitada, sino usar la del plan
+      const activityToUse = useAdjustedActivity && adjustedActivity !== null 
+        ? adjustedActivity 
+        : plan.refAirKermaRate
+
       const sources = makeSourceTrain(
         allDwells,
-        plan.refAirKermaRate,
+        activityToUse,
         IR192_CONSTANTS.doseRateConstant,
         IR192_CONSTANTS.activeLength,
         plan.halfLife
       )
 
       console.log('Sources creadas:', sources.length)
+      console.log('Actividad usada:', activityToUse.toFixed(3), 'U')
       console.log('Calculando dosis en', calculationPoints.length, 'puntos...')
 
       // Calcular dosis en cada punto
@@ -116,8 +137,45 @@ function Tg43Calculator() {
     setFileName('')
     setCalculationPoints([])
     setResults(null)
+    setAdjustedActivity(null)
+    setUseAdjustedActivity(false)
     if (fileInputRef.current) fileInputRef.current.value = ''
   }
+
+  // Función para parsear fecha DICOM (YYYYMMDD) a Date
+  const parseDicomDate = (dicomDate) => {
+    if (!dicomDate || dicomDate.length < 8) return null
+    const year = parseInt(dicomDate.substring(0, 4))
+    const month = parseInt(dicomDate.substring(4, 6)) - 1
+    const day = parseInt(dicomDate.substring(6, 8))
+    return new Date(year, month, day)
+  }
+
+  // Calcular información de decaimiento
+  const getDecayInfo = () => {
+    if (!plan || !plan.sourceCalibrationDate) return null
+    
+    const calibrationDate = parseDicomDate(plan.sourceCalibrationDate)
+    const treatmentDate = plan.treatmentDate ? parseDicomDate(plan.treatmentDate) : new Date()
+    
+    if (!calibrationDate) return null
+    
+    const decayFactor = calculateDecayFactor(calibrationDate, treatmentDate, plan.halfLife)
+    const currentActivity = plan.refAirKermaRate * decayFactor
+    const daysDiff = Math.floor((treatmentDate - calibrationDate) / (1000 * 60 * 60 * 24))
+    
+    return {
+      calibrationDate,
+      treatmentDate,
+      daysDiff,
+      decayFactor,
+      initialActivity: plan.refAirKermaRate,
+      currentActivity,
+      percentRemaining: decayFactor * 100
+    }
+  }
+
+  const decayInfo = getDecayInfo()
 
   return (
     <div className="page-body" style={{ maxWidth: '1200px', margin: '0 auto', padding: '24px' }}>
@@ -219,6 +277,83 @@ function Tg43Calculator() {
               </div>
             </div>
           </div>
+
+          {/* Decay Information */}
+          {decayInfo && (
+            <div className="tg43-decay-info">
+              <h3><i className="bi bi-hourglass-split"></i> Información de Decaimiento</h3>
+              
+              <div className="tg43-decay-grid">
+                <div className="tg43-decay-item">
+                  <span className="tg43-info-label">Fecha de Calibración</span>
+                  <span className="tg43-info-value">
+                    {decayInfo.calibrationDate.toLocaleDateString('es-ES')}
+                  </span>
+                </div>
+                <div className="tg43-decay-item">
+                  <span className="tg43-info-label">Fecha de Tratamiento</span>
+                  <span className="tg43-info-value">
+                    {decayInfo.treatmentDate.toLocaleDateString('es-ES')}
+                  </span>
+                </div>
+                <div className="tg43-decay-item">
+                  <span className="tg43-info-label">Días Transcurridos</span>
+                  <span className="tg43-info-value">{decayInfo.daysDiff} días</span>
+                </div>
+                <div className="tg43-decay-item">
+                  <span className="tg43-info-label">Actividad Inicial</span>
+                  <span className="tg43-info-value">{decayInfo.initialActivity.toFixed(3)} U</span>
+                </div>
+                <div className="tg43-decay-item">
+                  <span className="tg43-info-label">Actividad Actual</span>
+                  <span className="tg43-info-value" style={{ color: 'var(--accent-color)', fontWeight: 600 }}>
+                    {decayInfo.currentActivity.toFixed(3)} U
+                  </span>
+                </div>
+                <div className="tg43-decay-item">
+                  <span className="tg43-info-label">Actividad Restante</span>
+                  <span className="tg43-info-value">{decayInfo.percentRemaining.toFixed(1)}%</span>
+                </div>
+              </div>
+
+              <div className="tg43-activity-adjust">
+                <label className="tg43-checkbox-label">
+                  <input
+                    type="checkbox"
+                    checked={useAdjustedActivity}
+                    onChange={(e) => {
+                      setUseAdjustedActivity(e.target.checked)
+                      if (e.target.checked && adjustedActivity === null) {
+                        setAdjustedActivity(decayInfo.currentActivity)
+                      }
+                    }}
+                  />
+                  <span>Usar actividad ajustada para cálculos</span>
+                </label>
+                
+                {useAdjustedActivity && (
+                  <div className="tg43-activity-input">
+                    <label>Actividad Ajustada (U):</label>
+                    <input
+                      type="number"
+                      step="0.001"
+                      value={adjustedActivity || ''}
+                      onChange={(e) => setAdjustedActivity(parseFloat(e.target.value) || 0)}
+                      className="dark-input"
+                      placeholder="Ingrese actividad"
+                    />
+                    <button 
+                      onClick={() => setAdjustedActivity(decayInfo.currentActivity)}
+                      className="btn-sm"
+                      style={{ marginLeft: '8px' }}
+                    >
+                      Usar Calculada
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Calculation Points */}
           <div className="tg43-section">

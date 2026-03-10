@@ -1,175 +1,288 @@
-// Datos tabulados para diferentes fuentes de Ir-192 HDR
+// Datos tabulados para fuente Ir-192 HDR
 // Basado en TG-43 formalism
-// NOTA: Para uso clínico, verificar con datos oficiales del fabricante
+// Fuente: L = 0.35 cm, Λ = 1.117 cGy/(h·U)
 
 import { RadialDosePoint, AnisotropyPoint } from './types'
 
 // ============================================================================
-// FUENTE: microSelectron v2 (Nucletron/Elekta)
+// FUNCIÓN DE DOSIS RADIAL gL(r)
 // ============================================================================
 
-export const microSelectronV2_RadialDose: RadialDosePoint[] = [
-  { r: 0.1, gL: 1.400 },
-  { r: 0.15, gL: 1.350 },
-  { r: 0.2, gL: 1.300 },
-  { r: 0.25, gL: 1.250 },
-  { r: 0.3, gL: 1.210 },
-  { r: 0.4, gL: 1.170 },
-  { r: 0.5, gL: 1.148 },
-  { r: 0.6, gL: 1.130 },
-  { r: 0.75, gL: 1.108 },
-  { r: 1.0, gL: 1.000 },
-  { r: 1.5, gL: 0.987 },
-  { r: 2.0, gL: 0.975 },
-  { r: 2.5, gL: 0.964 },
-  { r: 3.0, gL: 0.953 },
-  { r: 3.5, gL: 0.943 },
-  { r: 4.0, gL: 0.932 },
-  { r: 4.5, gL: 0.922 },
-  { r: 5.0, gL: 0.912 },
-  { r: 5.5, gL: 0.902 },
-  { r: 6.0, gL: 0.893 },
-  { r: 6.5, gL: 0.884 },
-  { r: 7.0, gL: 0.875 },
-  { r: 7.5, gL: 0.867 },
-  { r: 8.0, gL: 0.858 },
-  { r: 8.5, gL: 0.850 },
-  { r: 9.0, gL: 0.842 },
-  { r: 9.5, gL: 0.834 },
-  { r: 10.0, gL: 0.827 },
-  { r: 11.0, gL: 0.813 },
-  { r: 12.0, gL: 0.799 },
-  { r: 13.0, gL: 0.786 },
-  { r: 14.0, gL: 0.774 },
-  { r: 15.0, gL: 0.762 }
-]
-
-export const microSelectronV2_Anisotropy: AnisotropyPoint[] = [
-  // r = 1 cm
-  { r: 1.0, theta: 0, F: 0.59 },
-  { r: 1.0, theta: Math.PI / 12, F: 0.66 },
-  { r: 1.0, theta: Math.PI / 6, F: 0.74 },
-  { r: 1.0, theta: Math.PI / 4, F: 0.83 },
-  { r: 1.0, theta: Math.PI / 3, F: 0.91 },
-  { r: 1.0, theta: 5 * Math.PI / 12, F: 0.97 },
-  { r: 1.0, theta: Math.PI / 2, F: 1.00 },
-  { r: 1.0, theta: 7 * Math.PI / 12, F: 0.97 },
-  { r: 1.0, theta: 2 * Math.PI / 3, F: 0.91 },
-  { r: 1.0, theta: 3 * Math.PI / 4, F: 0.83 },
-  { r: 1.0, theta: 5 * Math.PI / 6, F: 0.74 },
-  { r: 1.0, theta: 11 * Math.PI / 12, F: 0.66 },
-  { r: 1.0, theta: Math.PI, F: 0.59 },
-  
-  // r = 2 cm
-  { r: 2.0, theta: 0, F: 0.64 },
-  { r: 2.0, theta: Math.PI / 12, F: 0.70 },
-  { r: 2.0, theta: Math.PI / 6, F: 0.78 },
-  { r: 2.0, theta: Math.PI / 4, F: 0.86 },
-  { r: 2.0, theta: Math.PI / 3, F: 0.93 },
-  { r: 2.0, theta: 5 * Math.PI / 12, F: 0.98 },
-  { r: 2.0, theta: Math.PI / 2, F: 1.00 },
-  { r: 2.0, theta: 7 * Math.PI / 12, F: 0.98 },
-  { r: 2.0, theta: 2 * Math.PI / 3, F: 0.93 },
-  { r: 2.0, theta: 3 * Math.PI / 4, F: 0.86 },
-  { r: 2.0, theta: 5 * Math.PI / 6, F: 0.78 },
-  { r: 2.0, theta: 11 * Math.PI / 12, F: 0.70 },
-  { r: 2.0, theta: Math.PI, F: 0.64 },
-  
-  // r = 5 cm
-  { r: 5.0, theta: 0, F: 0.78 },
-  { r: 5.0, theta: Math.PI / 12, F: 0.82 },
-  { r: 5.0, theta: Math.PI / 6, F: 0.87 },
-  { r: 5.0, theta: Math.PI / 4, F: 0.92 },
-  { r: 5.0, theta: Math.PI / 3, F: 0.96 },
-  { r: 5.0, theta: 5 * Math.PI / 12, F: 0.99 },
-  { r: 5.0, theta: Math.PI / 2, F: 1.00 },
-  { r: 5.0, theta: 7 * Math.PI / 12, F: 0.99 },
-  { r: 5.0, theta: 2 * Math.PI / 3, F: 0.96 },
-  { r: 5.0, theta: 3 * Math.PI / 4, F: 0.92 },
-  { r: 5.0, theta: 5 * Math.PI / 6, F: 0.87 },
-  { r: 5.0, theta: 11 * Math.PI / 12, F: 0.82 },
-  { r: 5.0, theta: Math.PI, F: 0.78 },
-  
-  // r = 10 cm
-  { r: 10.0, theta: 0, F: 0.88 },
-  { r: 10.0, theta: Math.PI / 12, F: 0.90 },
-  { r: 10.0, theta: Math.PI / 6, F: 0.93 },
-  { r: 10.0, theta: Math.PI / 4, F: 0.96 },
-  { r: 10.0, theta: Math.PI / 3, F: 0.98 },
-  { r: 10.0, theta: 5 * Math.PI / 12, F: 0.99 },
-  { r: 10.0, theta: Math.PI / 2, F: 1.00 },
-  { r: 10.0, theta: 7 * Math.PI / 12, F: 0.99 },
-  { r: 10.0, theta: 2 * Math.PI / 3, F: 0.98 },
-  { r: 10.0, theta: 3 * Math.PI / 4, F: 0.96 },
-  { r: 10.0, theta: 5 * Math.PI / 6, F: 0.93 },
-  { r: 10.0, theta: 11 * Math.PI / 12, F: 0.90 },
-  { r: 10.0, theta: Math.PI, F: 0.88 }
+export const radialDoseData: RadialDosePoint[] = [
+  { r: 0.00, gL: 0.998 },
+  { r: 0.20, gL: 0.998 },
+  { r: 0.25, gL: 0.997 },
+  { r: 0.50, gL: 0.996 },
+  { r: 0.75, gL: 0.998 },
+  { r: 1.00, gL: 1.000 },
+  { r: 1.50, gL: 1.003 },
+  { r: 2.00, gL: 1.006 },
+  { r: 3.00, gL: 1.006 },
+  { r: 4.00, gL: 1.004 },
+  { r: 5.00, gL: 0.999 },
+  { r: 6.00, gL: 0.993 },
+  { r: 8.00, gL: 0.968 },
+  { r: 10.00, gL: 0.935 }
 ]
 
 // ============================================================================
-// FUENTE: Bravos (Varian) - PLACEHOLDER
-// TODO: Añadir datos de Calatayud et al. cuando estén disponibles
+// FUNCIÓN DE ANISOTROPÍA F(r,θ)
 // ============================================================================
 
-export const bravos_RadialDose: RadialDosePoint[] = [
-  // PLACEHOLDER - Reemplazar con datos reales de Calatayud
-  // Referencia: Calatayud et al., Med Phys (año)
-  { r: 1.0, gL: 1.000 }
+export const anisotropyData: AnisotropyPoint[] = [
+  // r = 0.20 cm
+  { r: 0.20, theta: 0 * Math.PI / 180, F: 0.695 },
+  { r: 0.20, theta: 1 * Math.PI / 180, F: 0.711 },
+  { r: 0.20, theta: 2 * Math.PI / 180, F: 0.715 },
+  { r: 0.20, theta: 3 * Math.PI / 180, F: 0.708 },
+  { r: 0.20, theta: 4 * Math.PI / 180, F: 0.736 },
+  { r: 0.20, theta: 5 * Math.PI / 180, F: 0.728 },
+  { r: 0.20, theta: 6 * Math.PI / 180, F: 0.722 },
+  { r: 0.20, theta: 7 * Math.PI / 180, F: 0.736 },
+  { r: 0.20, theta: 8 * Math.PI / 180, F: 0.732 },
+  { r: 0.20, theta: 9 * Math.PI / 180, F: 0.744 },
+  { r: 0.20, theta: 10 * Math.PI / 180, F: 0.762 },
+  { r: 0.20, theta: 15 * Math.PI / 180, F: 0.837 },
+  { r: 0.20, theta: 20 * Math.PI / 180, F: 0.962 },
+  { r: 0.20, theta: 30 * Math.PI / 180, F: 0.968 },
+  { r: 0.20, theta: 40 * Math.PI / 180, F: 0.979 },
+  { r: 0.20, theta: 50 * Math.PI / 180, F: 0.987 },
+  { r: 0.20, theta: 60 * Math.PI / 180, F: 0.993 },
+  { r: 0.20, theta: 70 * Math.PI / 180, F: 0.994 },
+  { r: 0.20, theta: 80 * Math.PI / 180, F: 0.998 },
+  { r: 0.20, theta: 90 * Math.PI / 180, F: 1.000 },
+  { r: 0.20, theta: 100 * Math.PI / 180, F: 1.000 },
+  { r: 0.20, theta: 110 * Math.PI / 180, F: 0.998 },
+  { r: 0.20, theta: 120 * Math.PI / 180, F: 0.998 },
+  { r: 0.20, theta: 130 * Math.PI / 180, F: 0.994 },
+  { r: 0.20, theta: 140 * Math.PI / 180, F: 0.991 },
+  { r: 0.20, theta: 150 * Math.PI / 180, F: 0.973 },
+  { r: 0.20, theta: 160 * Math.PI / 180, F: 0.966 },
+  { r: 0.20, theta: 165 * Math.PI / 180, F: 0.828 },
+  { r: 0.20, theta: 170 * Math.PI / 180, F: 0.789 },
+  { r: 0.20, theta: 171 * Math.PI / 180, F: 0.730 },
+  { r: 0.20, theta: 172 * Math.PI / 180, F: 0.722 },
+  { r: 0.20, theta: 173 * Math.PI / 180, F: 0.627 },
+  { r: 0.20, theta: 174 * Math.PI / 180, F: 0.574 },
+  { r: 0.20, theta: 175 * Math.PI / 180, F: 0.627 },
+  { r: 0.20, theta: 176 * Math.PI / 180, F: 0.710 },
+  { r: 0.20, theta: 177 * Math.PI / 180, F: 0.687 },
+  { r: 0.20, theta: 178 * Math.PI / 180, F: 0.450 },
+  { r: 0.20, theta: 179 * Math.PI / 180, F: 0.329 },
+  { r: 0.20, theta: 180 * Math.PI / 180, F: 0.417 },
+
+  // r = 0.40 cm
+  { r: 0.40, theta: 0 * Math.PI / 180, F: 0.666 },
+  { r: 0.40, theta: 1 * Math.PI / 180, F: 0.677 },
+  { r: 0.40, theta: 2 * Math.PI / 180, F: 0.684 },
+  { r: 0.40, theta: 3 * Math.PI / 180, F: 0.684 },
+  { r: 0.40, theta: 4 * Math.PI / 180, F: 0.701 },
+  { r: 0.40, theta: 5 * Math.PI / 180, F: 0.706 },
+  { r: 0.40, theta: 6 * Math.PI / 180, F: 0.709 },
+  { r: 0.40, theta: 7 * Math.PI / 180, F: 0.720 },
+  { r: 0.40, theta: 8 * Math.PI / 180, F: 0.726 },
+  { r: 0.40, theta: 9 * Math.PI / 180, F: 0.738 },
+  { r: 0.40, theta: 10 * Math.PI / 180, F: 0.753 },
+  { r: 0.40, theta: 15 * Math.PI / 180, F: 0.820 },
+  { r: 0.40, theta: 20 * Math.PI / 180, F: 0.866 },
+  { r: 0.40, theta: 30 * Math.PI / 180, F: 0.923 },
+  { r: 0.40, theta: 40 * Math.PI / 180, F: 0.956 },
+  { r: 0.40, theta: 50 * Math.PI / 180, F: 0.977 },
+  { r: 0.40, theta: 60 * Math.PI / 180, F: 0.987 },
+  { r: 0.40, theta: 70 * Math.PI / 180, F: 0.995 },
+  { r: 0.40, theta: 80 * Math.PI / 180, F: 0.999 },
+  { r: 0.40, theta: 90 * Math.PI / 180, F: 1.000 },
+  { r: 0.40, theta: 100 * Math.PI / 180, F: 0.999 },
+  { r: 0.40, theta: 110 * Math.PI / 180, F: 0.996 },
+  { r: 0.40, theta: 120 * Math.PI / 180, F: 0.990 },
+  { r: 0.40, theta: 130 * Math.PI / 180, F: 0.976 },
+  { r: 0.40, theta: 140 * Math.PI / 180, F: 0.958 },
+  { r: 0.40, theta: 150 * Math.PI / 180, F: 0.923 },
+  { r: 0.40, theta: 160 * Math.PI / 180, F: 0.873 },
+  { r: 0.40, theta: 165 * Math.PI / 180, F: 0.814 },
+  { r: 0.40, theta: 170 * Math.PI / 180, F: 0.756 },
+  { r: 0.40, theta: 171 * Math.PI / 180, F: 0.715 },
+  { r: 0.40, theta: 172 * Math.PI / 180, F: 0.699 },
+  { r: 0.40, theta: 173 * Math.PI / 180, F: 0.635 },
+  { r: 0.40, theta: 174 * Math.PI / 180, F: 0.596 },
+  { r: 0.40, theta: 175 * Math.PI / 180, F: 0.623 },
+  { r: 0.40, theta: 176 * Math.PI / 180, F: 0.674 },
+  { r: 0.40, theta: 177 * Math.PI / 180, F: 0.658 },
+  { r: 0.40, theta: 178 * Math.PI / 180, F: 0.459 },
+  { r: 0.40, theta: 179 * Math.PI / 180, F: 0.340 },
+  { r: 0.40, theta: 180 * Math.PI / 180, F: 0.421 },
+
+  // r = 1.00 cm
+  { r: 1.00, theta: 0 * Math.PI / 180, F: 0.608 },
+  { r: 1.00, theta: 1 * Math.PI / 180, F: 0.609 },
+  { r: 1.00, theta: 2 * Math.PI / 180, F: 0.620 },
+  { r: 1.00, theta: 3 * Math.PI / 180, F: 0.634 },
+  { r: 1.00, theta: 4 * Math.PI / 180, F: 0.645 },
+  { r: 1.00, theta: 5 * Math.PI / 180, F: 0.664 },
+  { r: 1.00, theta: 6 * Math.PI / 180, F: 0.681 },
+  { r: 1.00, theta: 7 * Math.PI / 180, F: 0.692 },
+  { r: 1.00, theta: 8 * Math.PI / 180, F: 0.712 },
+  { r: 1.00, theta: 9 * Math.PI / 180, F: 0.726 },
+  { r: 1.00, theta: 10 * Math.PI / 180, F: 0.738 },
+  { r: 1.00, theta: 15 * Math.PI / 180, F: 0.802 },
+  { r: 1.00, theta: 20 * Math.PI / 180, F: 0.852 },
+  { r: 1.00, theta: 30 * Math.PI / 180, F: 0.912 },
+  { r: 1.00, theta: 40 * Math.PI / 180, F: 0.948 },
+  { r: 1.00, theta: 50 * Math.PI / 180, F: 0.971 },
+  { r: 1.00, theta: 60 * Math.PI / 180, F: 0.985 },
+  { r: 1.00, theta: 70 * Math.PI / 180, F: 0.995 },
+  { r: 1.00, theta: 80 * Math.PI / 180, F: 0.999 },
+  { r: 1.00, theta: 90 * Math.PI / 180, F: 1.000 },
+  { r: 1.00, theta: 100 * Math.PI / 180, F: 0.999 },
+  { r: 1.00, theta: 110 * Math.PI / 180, F: 0.995 },
+  { r: 1.00, theta: 120 * Math.PI / 180, F: 0.985 },
+  { r: 1.00, theta: 130 * Math.PI / 180, F: 0.972 },
+  { r: 1.00, theta: 140 * Math.PI / 180, F: 0.948 },
+  { r: 1.00, theta: 150 * Math.PI / 180, F: 0.914 },
+  { r: 1.00, theta: 160 * Math.PI / 180, F: 0.847 },
+  { r: 1.00, theta: 165 * Math.PI / 180, F: 0.796 },
+  { r: 1.00, theta: 170 * Math.PI / 180, F: 0.725 },
+  { r: 1.00, theta: 171 * Math.PI / 180, F: 0.706 },
+  { r: 1.00, theta: 172 * Math.PI / 180, F: 0.686 },
+  { r: 1.00, theta: 173 * Math.PI / 180, F: 0.664 },
+  { r: 1.00, theta: 174 * Math.PI / 180, F: 0.643 },
+  { r: 1.00, theta: 175 * Math.PI / 180, F: 0.611 },
+  { r: 1.00, theta: 176 * Math.PI / 180, F: 0.568 },
+  { r: 1.00, theta: 177 * Math.PI / 180, F: 0.536 },
+  { r: 1.00, theta: 178 * Math.PI / 180, F: 0.496 },
+  { r: 1.00, theta: 179 * Math.PI / 180, F: 0.384 },
+  { r: 1.00, theta: 180 * Math.PI / 180, F: 0.440 },
+
+  // r = 2.00 cm
+  { r: 2.00, theta: 0 * Math.PI / 180, F: 0.629 },
+  { r: 2.00, theta: 1 * Math.PI / 180, F: 0.633 },
+  { r: 2.00, theta: 2 * Math.PI / 180, F: 0.641 },
+  { r: 2.00, theta: 3 * Math.PI / 180, F: 0.653 },
+  { r: 2.00, theta: 4 * Math.PI / 180, F: 0.668 },
+  { r: 2.00, theta: 5 * Math.PI / 180, F: 0.682 },
+  { r: 2.00, theta: 6 * Math.PI / 180, F: 0.697 },
+  { r: 2.00, theta: 7 * Math.PI / 180, F: 0.712 },
+  { r: 2.00, theta: 8 * Math.PI / 180, F: 0.724 },
+  { r: 2.00, theta: 9 * Math.PI / 180, F: 0.738 },
+  { r: 2.00, theta: 10 * Math.PI / 180, F: 0.752 },
+  { r: 2.00, theta: 15 * Math.PI / 180, F: 0.811 },
+  { r: 2.00, theta: 20 * Math.PI / 180, F: 0.858 },
+  { r: 2.00, theta: 30 * Math.PI / 180, F: 0.918 },
+  { r: 2.00, theta: 40 * Math.PI / 180, F: 0.951 },
+  { r: 2.00, theta: 50 * Math.PI / 180, F: 0.973 },
+  { r: 2.00, theta: 60 * Math.PI / 180, F: 0.988 },
+  { r: 2.00, theta: 70 * Math.PI / 180, F: 0.996 },
+  { r: 2.00, theta: 80 * Math.PI / 180, F: 1.000 },
+  { r: 2.00, theta: 90 * Math.PI / 180, F: 1.000 },
+  { r: 2.00, theta: 100 * Math.PI / 180, F: 0.998 },
+  { r: 2.00, theta: 110 * Math.PI / 180, F: 0.994 },
+  { r: 2.00, theta: 120 * Math.PI / 180, F: 0.987 },
+  { r: 2.00, theta: 130 * Math.PI / 180, F: 0.973 },
+  { r: 2.00, theta: 140 * Math.PI / 180, F: 0.950 },
+  { r: 2.00, theta: 150 * Math.PI / 180, F: 0.916 },
+  { r: 2.00, theta: 160 * Math.PI / 180, F: 0.856 },
+  { r: 2.00, theta: 165 * Math.PI / 180, F: 0.806 },
+  { r: 2.00, theta: 170 * Math.PI / 180, F: 0.734 },
+  { r: 2.00, theta: 171 * Math.PI / 180, F: 0.716 },
+  { r: 2.00, theta: 172 * Math.PI / 180, F: 0.696 },
+  { r: 2.00, theta: 173 * Math.PI / 180, F: 0.675 },
+  { r: 2.00, theta: 174 * Math.PI / 180, F: 0.653 },
+  { r: 2.00, theta: 175 * Math.PI / 180, F: 0.627 },
+  { r: 2.00, theta: 176 * Math.PI / 180, F: 0.598 },
+  { r: 2.00, theta: 177 * Math.PI / 180, F: 0.564 },
+  { r: 2.00, theta: 178 * Math.PI / 180, F: 0.529 },
+  { r: 2.00, theta: 179 * Math.PI / 180, F: 0.423 },
+  { r: 2.00, theta: 180 * Math.PI / 180, F: 0.456 },
+
+  // r = 5.00 cm
+  { r: 5.00, theta: 0 * Math.PI / 180, F: 0.702 },
+  { r: 5.00, theta: 1 * Math.PI / 180, F: 0.716 },
+  { r: 5.00, theta: 2 * Math.PI / 180, F: 0.717 },
+  { r: 5.00, theta: 3 * Math.PI / 180, F: 0.726 },
+  { r: 5.00, theta: 4 * Math.PI / 180, F: 0.736 },
+  { r: 5.00, theta: 5 * Math.PI / 180, F: 0.748 },
+  { r: 5.00, theta: 6 * Math.PI / 180, F: 0.757 },
+  { r: 5.00, theta: 7 * Math.PI / 180, F: 0.769 },
+  { r: 5.00, theta: 8 * Math.PI / 180, F: 0.779 },
+  { r: 5.00, theta: 9 * Math.PI / 180, F: 0.790 },
+  { r: 5.00, theta: 10 * Math.PI / 180, F: 0.799 },
+  { r: 5.00, theta: 15 * Math.PI / 180, F: 0.844 },
+  { r: 5.00, theta: 20 * Math.PI / 180, F: 0.878 },
+  { r: 5.00, theta: 30 * Math.PI / 180, F: 0.927 },
+  { r: 5.00, theta: 40 * Math.PI / 180, F: 0.958 },
+  { r: 5.00, theta: 50 * Math.PI / 180, F: 0.977 },
+  { r: 5.00, theta: 60 * Math.PI / 180, F: 0.989 },
+  { r: 5.00, theta: 70 * Math.PI / 180, F: 0.996 },
+  { r: 5.00, theta: 80 * Math.PI / 180, F: 0.999 },
+  { r: 5.00, theta: 90 * Math.PI / 180, F: 1.000 },
+  { r: 5.00, theta: 100 * Math.PI / 180, F: 1.000 },
+  { r: 5.00, theta: 110 * Math.PI / 180, F: 0.995 },
+  { r: 5.00, theta: 120 * Math.PI / 180, F: 0.988 },
+  { r: 5.00, theta: 130 * Math.PI / 180, F: 0.976 },
+  { r: 5.00, theta: 140 * Math.PI / 180, F: 0.956 },
+  { r: 5.00, theta: 150 * Math.PI / 180, F: 0.925 },
+  { r: 5.00, theta: 160 * Math.PI / 180, F: 0.876 },
+  { r: 5.00, theta: 165 * Math.PI / 180, F: 0.838 },
+  { r: 5.00, theta: 170 * Math.PI / 180, F: 0.784 },
+  { r: 5.00, theta: 171 * Math.PI / 180, F: 0.768 },
+  { r: 5.00, theta: 172 * Math.PI / 180, F: 0.752 },
+  { r: 5.00, theta: 173 * Math.PI / 180, F: 0.735 },
+  { r: 5.00, theta: 174 * Math.PI / 180, F: 0.715 },
+  { r: 5.00, theta: 175 * Math.PI / 180, F: 0.692 },
+  { r: 5.00, theta: 176 * Math.PI / 180, F: 0.666 },
+  { r: 5.00, theta: 177 * Math.PI / 180, F: 0.634 },
+  { r: 5.00, theta: 178 * Math.PI / 180, F: 0.591 },
+  { r: 5.00, theta: 179 * Math.PI / 180, F: 0.548 },
+  { r: 5.00, theta: 180 * Math.PI / 180, F: 0.523 },
+
+  // r = 10.00 cm
+  { r: 10.00, theta: 0 * Math.PI / 180, F: 0.789 },
+  { r: 10.00, theta: 1 * Math.PI / 180, F: 0.786 },
+  { r: 10.00, theta: 2 * Math.PI / 180, F: 0.794 },
+  { r: 10.00, theta: 3 * Math.PI / 180, F: 0.798 },
+  { r: 10.00, theta: 4 * Math.PI / 180, F: 0.805 },
+  { r: 10.00, theta: 5 * Math.PI / 180, F: 0.811 },
+  { r: 10.00, theta: 6 * Math.PI / 180, F: 0.817 },
+  { r: 10.00, theta: 7 * Math.PI / 180, F: 0.823 },
+  { r: 10.00, theta: 8 * Math.PI / 180, F: 0.830 },
+  { r: 10.00, theta: 9 * Math.PI / 180, F: 0.837 },
+  { r: 10.00, theta: 10 * Math.PI / 180, F: 0.844 },
+  { r: 10.00, theta: 15 * Math.PI / 180, F: 0.873 },
+  { r: 10.00, theta: 20 * Math.PI / 180, F: 0.900 },
+  { r: 10.00, theta: 30 * Math.PI / 180, F: 0.939 },
+  { r: 10.00, theta: 40 * Math.PI / 180, F: 0.963 },
+  { r: 10.00, theta: 50 * Math.PI / 180, F: 0.978 },
+  { r: 10.00, theta: 60 * Math.PI / 180, F: 0.988 },
+  { r: 10.00, theta: 70 * Math.PI / 180, F: 0.996 },
+  { r: 10.00, theta: 80 * Math.PI / 180, F: 0.999 },
+  { r: 10.00, theta: 90 * Math.PI / 180, F: 1.000 },
+  { r: 10.00, theta: 100 * Math.PI / 180, F: 0.9989 },
+  { r: 10.00, theta: 110 * Math.PI / 180, F: 0.9949 },
+  { r: 10.00, theta: 120 * Math.PI / 180, F: 0.9890 },
+  { r: 10.00, theta: 130 * Math.PI / 180, F: 0.9790 },
+  { r: 10.00, theta: 140 * Math.PI / 180, F: 0.9624 },
+  { r: 10.00, theta: 150 * Math.PI / 180, F: 0.9347 },
+  { r: 10.00, theta: 160 * Math.PI / 180, F: 0.8954 },
+  { r: 10.00, theta: 165 * Math.PI / 180, F: 0.8700 },
+  { r: 10.00, theta: 170 * Math.PI / 180, F: 0.8311 },
+  { r: 10.00, theta: 171 * Math.PI / 180, F: 0.8221 },
+  { r: 10.00, theta: 172 * Math.PI / 180, F: 0.8114 },
+  { r: 10.00, theta: 173 * Math.PI / 180, F: 0.799 },
+  { r: 10.00, theta: 174 * Math.PI / 180, F: 0.784 },
+  { r: 10.00, theta: 175 * Math.PI / 180, F: 0.769 },
+  { r: 10.00, theta: 176 * Math.PI / 180, F: 0.750 },
+  { r: 10.00, theta: 177 * Math.PI / 180, F: 0.729 },
+  { r: 10.00, theta: 178 * Math.PI / 180, F: 0.702 },
+  { r: 10.00, theta: 179 * Math.PI / 180, F: 0.659 },
+  { r: 10.00, theta: 180 * Math.PI / 180, F: 0.633 }
 ]
 
-export const bravos_Anisotropy: AnisotropyPoint[] = [
-  // PLACEHOLDER - Reemplazar con datos reales de Calatayud
-  { r: 1.0, theta: Math.PI / 2, F: 1.00 }
-]
-
 // ============================================================================
-// CONFIGURACIÓN DE FUENTES
+// CONSTANTES DE LA FUENTE
 // ============================================================================
 
-export interface SourceConfig {
-  name: string
-  manufacturer: string
-  model: string
-  doseRateConstant: number // Lambda (cGy/h/U)
-  activeLength: number // L (cm)
-  halfLife: number // días
-  radialDoseData: RadialDosePoint[]
-  anisotropyData: AnisotropyPoint[]
-}
-
-export const SOURCES: Record<string, SourceConfig> = {
-  'microSelectron-v2': {
-    name: 'microSelectron v2',
-    manufacturer: 'Nucletron/Elekta',
-    model: 'microSelectron v2',
-    doseRateConstant: 1.108,
-    activeLength: 0.35,
-    halfLife: 73.83,
-    radialDoseData: microSelectronV2_RadialDose,
-    anisotropyData: microSelectronV2_Anisotropy
-  },
-  'bravos': {
-    name: 'Bravos',
-    manufacturer: 'Varian',
-    model: 'Bravos',
-    doseRateConstant: 1.108, // TODO: Verificar valor exacto
-    activeLength: 0.35, // TODO: Verificar valor exacto
-    halfLife: 73.83,
-    radialDoseData: bravos_RadialDose,
-    anisotropyData: bravos_Anisotropy
-  }
-}
-
-// Fuente por defecto
-export const DEFAULT_SOURCE = SOURCES['microSelectron-v2']
-
-// Constantes para Ir-192 (compatibilidad con código existente)
 export const IR192_CONSTANTS = {
-  doseRateConstant: DEFAULT_SOURCE.doseRateConstant,
-  activeLength: DEFAULT_SOURCE.activeLength,
-  halfLife: DEFAULT_SOURCE.halfLife
+  doseRateConstant: 1.117, // Λ (cGy/h/U)
+  activeLength: 0.35,      // L (cm)
+  halfLife: 73.83          // días
 }
-
-// Exports para compatibilidad con código existente
-export const radialDoseData = DEFAULT_SOURCE.radialDoseData
-export const anisotropyData = DEFAULT_SOURCE.anisotropyData
